@@ -13,9 +13,15 @@ birth.
 - `api/storage.js` — a small serverless function that the page calls for
   anything that needs to be **shared across every guest's phone** (guesses,
   the reveal state). It's backed by [Vercel KV](https://vercel.com/docs/storage/vercel-kv)
-  (Upstash Redis) in production.
+  (Upstash Redis) in production. `api/_lib/kv.js` holds the actual read/write
+  logic, shared with the cron function below.
 - Anything **private to one phone** (which entry is "mine") is kept in that
   browser's `localStorage` and never leaves the device.
+- `api/cron/daily-reminder.js` — runs once a day (see `vercel.json`). If any
+  guess's date is today, it emails everyone who left a reminder address —
+  every subscriber gets notified for every guessed day on the board, not
+  just the day they personally picked. Sends through
+  [Resend](https://resend.com).
 
 ## Deploy to Vercel
 
@@ -36,6 +42,26 @@ birth.
 Without a connected KV store, `api/storage.js` falls back to an in-memory
 store so the app still *runs*, but guesses won't persist or be shared
 between visitors in production — only useful for local testing.
+
+4. **Set up email reminders** (optional — the board works fine without
+   this, guests just won't be able to leave a reminder email that actually
+   sends anything):
+   - Sign up at [resend.com](https://resend.com) and create an API key.
+   - In the Vercel project's **Settings → Environment Variables**, add:
+     - `RESEND_API_KEY` — the key from Resend.
+     - `CRON_SECRET` — any random string you make up. Vercel automatically
+       sends it as a bearer token when it triggers the cron job, which
+       stops anyone else from hitting that URL to spam guests on demand.
+     - `FROM_EMAIL` (optional) — defaults to
+       `Baby Emishaw <onboarding@resend.dev>`, which works out of the box
+       with no domain setup. Verify your own domain in Resend and set this
+       if you want a nicer from-address.
+     - `SITE_URL` (optional) — your deployed URL, included as a link in the
+       reminder emails.
+   - Redeploy after adding the env vars.
+   - The cron is scheduled in `vercel.json` (`0 13 * * *`, i.e. 13:00 UTC /
+     9am US Eastern daily) — edit that if you want a different time.
+     Vercel's cron schedules always run in UTC.
 
 ## Local development
 
@@ -78,3 +104,6 @@ From the host panel you can:
 - The calendar board is hardcoded to **October 2026**; guesses outside that
   month (allowed by the date picker's min/max) still save and show up in an
   "Outside October" list beneath the calendar.
+- The guess form's date field defaults to today's date (clamped to the
+  picker's min/max) rather than a fixed date, so the form itself never
+  hints at which day is the real due date.

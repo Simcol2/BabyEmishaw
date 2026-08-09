@@ -211,7 +211,7 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
     <label for="f-date">The day she arrives
       <span>Pick a date on the calendar.</span>
     </label>
-    <input type="date" id="f-date" min="2026-09-26" max="2026-11-15" value="2026-10-24">
+    <input type="date" id="f-date" min="2026-09-26" max="2026-11-15">
 
     <label for="f-time">Time of day
       <span>When the water breaks.</span>
@@ -244,7 +244,7 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
         <span class="month">October</span>
         <span class="daynum" id="daynum"><span class="blank"></span></span>
       </div>
-      <p class="note" id="placard-note">The number stays hidden until the reveal.</p>
+      <p class="note" id="placard-note">The number stays hidden until all guesses have been submitted.</p>
       <div class="countdown hidden" id="countdown">
         <div class="tick"><b id="cd-d">0</b><i>Days</i></div>
         <div class="tick"><b id="cd-h">0</b><i>Hrs</i></div>
@@ -277,7 +277,7 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
 
     <div class="card" id="email-card">
       <h2>Reminder</h2>
-      <p class="sub">Want a heads up when your guessed day arrives? Leave your email and you will get a nudge.</p>
+      <p class="sub">Want a heads up whenever a guessed day arrives? Leave your email and you will get a nudge for every guess on the board, not just your own.</p>
       <label for="f-email">Email address</label>
       <input type="email" id="f-email" placeholder="you@email.com" autocomplete="email">
       <button class="btn gold" id="save-email">Send me a reminder</button>
@@ -626,7 +626,7 @@ function renderPlacard(){
   }else{
     monthEl.textContent = 'October';
     dn.innerHTML = '<span class="blank"></span>';
-    note.textContent = 'The number stays hidden until the reveal.';
+    note.textContent = 'The number stays hidden until all guesses have been submitted.';
     show(cd,false);
     if(cdTimer) clearInterval(cdTimer);
   }
@@ -738,7 +738,7 @@ function renderTodayBanner(){
 function renderEmailCard(){
   const mine = entries.find(e=>e.id===myId);
   if(mine && mine.email){
-    $('email-card').innerHTML = '<h2>Reminder</h2><p class="sub">You are on the list. We will nudge you at '+esc(mine.email)+' when your day comes around.</p>';
+    $('email-card').innerHTML = '<h2>Reminder</h2><p class="sub">You are on the list. We will nudge you at '+esc(mine.email)+' whenever any guessed day on the board comes around.</p>';
   }
 }
 $('save-email').addEventListener('click', async ()=>{
@@ -829,6 +829,17 @@ $('do-reset').addEventListener('click', async ()=>{
     await renderAdmin(); toast('Board cleared.');
   }catch(e){ toast('Could not clear everything.'); }
 });
+
+(function setDefaultGuessDate(){
+  // Default to today's date rather than a fixed date, so the form itself
+  // never hints at which day is the real due date. Clamped to the
+  // picker's allowed range in case "today" falls outside it.
+  const el = $('f-date');
+  let d = todayKey();
+  if(el.min && d < el.min) d = el.min;
+  if(el.max && d > el.max) d = el.max;
+  el.value = d;
+})();
 
 boot();
 </script>
