@@ -50,7 +50,19 @@ async function get(key) {
 }
 async function set(key, value) {
   const kv = getKv();
-  if (kv) return kv.set(key, { v: value });
+  if (kv) {
+    const result = await kv.set(key, { v: value });
+    // A healthy Redis SET replies "OK". Anything else (a read-only token,
+    // a rejected write, etc.) can come back without the SDK throwing, which
+    // would otherwise look like a successful save that silently never
+    // happened - surface it instead of swallowing it.
+    if (result !== 'OK') {
+      const err = new Error('Unexpected SET result: ' + JSON.stringify(result));
+      err.code = 'kv_set_unexpected_result';
+      throw err;
+    }
+    return result;
+  }
   memoryStore.set(key, { v: value });
 }
 async function del(key) {
@@ -85,11 +97,15 @@ async function diagnose() {
     const testKey = 'diag:selftest:' + Date.now() + ':' + Math.random().toString(36).slice(2, 8);
     const testVal = 'ok-' + Math.random().toString(36).slice(2, 8);
     try {
-      await set(testKey, testVal);
-      const readBack = await get(testKey);
-      await del(testKey);
-      result.selfTest = readBack === testVal ? 'passed' : 'failed_mismatch';
-      if (result.selfTest !== 'passed') result.selfTestDetail = { wrote: testVal, read: readBack };
+      // Raw client calls (bypassing the get/set/del wrapper's {v:...} shape)
+      // so the actual SDK/REST responses are visible for debugging, not just
+      // our own pass/fail interpretation of them.
+      const rawSetResult = await kv.set(testKey, testVal);
+      const rawGetResult = await kv.get(testKey);
+      const rawDelResult = await kv.del(testKey);
+      result.raw = { set: rawSetResult, get: rawGetResult, del: rawDelResult };
+      result.selfTest = rawGetResult === testVal ? 'passed' : 'failed_mismatch';
+      if (result.selfTest !== 'passed') result.selfTestDetail = { wrote: testVal, read: rawGetResult };
     } catch (e) {
       result.selfTest = 'errored';
       result.selfTestError = String((e && e.message) || e);
