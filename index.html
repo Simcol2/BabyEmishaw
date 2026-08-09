@@ -232,12 +232,13 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
     <input type="text" id="f-with" placeholder="Name a name">
 
     <label for="f-note">Leave a note for Britt
-      <span>Optional</span>
+      <span>Optional — only Brittany will be able to read this.</span>
     </label>
     <textarea id="f-note" placeholder="Is there anything you want Britt to know? Words of encouragement, a joke to calm her nerves, etc."></textarea>
 
     <div id="guess-err" class="err hidden"></div>
     <button class="btn" id="submit-guess">Lock in my guess</button>
+    <button class="btn ghost" id="view-board-btn">Already guessed? View the board</button>
   </section>
 
   <!-- ============ BOARD ============ -->
@@ -343,14 +344,47 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
       <div class="rule"></div>
       <h2>Name guesses</h2>
       <div class="rowlist" id="name-dump"></div>
-
-      <div class="rule"></div>
-      <h2>Notes for Britt</h2>
-      <div class="notelist" id="note-dump"></div>
+      <p class="sub" style="margin:10px 0 0">Notes guests leave for Britt are private to her page and don't show up here.</p>
 
       <div class="rule"></div>
       <button class="btn ghost" id="admin-exit">Back to the board</button>
       <button class="btn ghost danger" id="do-reset">Clear every entry</button>
+    </div>
+  </section>
+
+  <!-- ============ BRITT'S PAGE ============ -->
+  <section id="screen-britt" class="hidden">
+    <div class="card" id="britt-gate">
+      <h2>For Britt</h2>
+      <p class="sub">Enter your passcode to see the guesses, your notes, and send an update.</p>
+      <input type="password" id="f-britt-pass" placeholder="Passcode">
+      <div id="britt-pass-err" class="err hidden">That passcode is not right. Try again.</div>
+      <button class="btn" id="do-britt-login">Unlock</button>
+      <button class="btn ghost" id="britt-back">Back to the board</button>
+    </div>
+
+    <div class="hidden" id="britt-panel">
+      <div class="card">
+        <h2>Every Guess</h2>
+        <p class="sub">Notes are only shown here, on your page — nobody else sees them.</p>
+        <div id="britt-guess-list"></div>
+      </div>
+
+      <div class="card">
+        <h2>Send an Update</h2>
+        <p class="sub">Goes out by email to everyone who left a reminder address — good for a false alarm, or if you have a feeling today's the day.</p>
+        <div class="stat">
+          <div><b id="britt-sub-count">0</b><i>Subscribers</i></div>
+        </div>
+        <button class="btn ghost small" id="preset-false-labor">False labor, still waiting</button>
+        <button class="btn ghost small" id="preset-today" style="margin-left:8px">I think today's the day</button>
+        <label for="f-britt-message">Your message</label>
+        <textarea id="f-britt-message" placeholder="Write an update for everyone who's watching..."></textarea>
+        <button class="btn gold" id="do-britt-send">Send to everyone</button>
+        <p class="sub" id="britt-send-status" style="margin-top:12px"></p>
+      </div>
+
+      <button class="btn ghost" id="britt-exit">Back to the board</button>
     </div>
   </section>
 
@@ -537,8 +571,13 @@ async function boot(){
     if(m && m.value) myId = m.value;
   }catch(e){ myId=null; }
 
-  const mine = entries.find(e=>e.id===myId);
   show($('screen-load'),false);
+
+  const path = window.location.pathname.replace(/\/+$/,'') || '/';
+  if(path.toLowerCase() === '/admin'){ openAdmin(); return; }
+  if(path.toLowerCase() === '/babyemishaw'){ openBritt(); return; }
+
+  const mine = entries.find(e=>e.id===myId);
   if(mine){ openBoard(); } else { show($('screen-guess'),true); }
 }
 
@@ -605,6 +644,7 @@ async function closeBonus(pick){
 }
 $('save-namesguess').addEventListener('click', ()=> closeBonus($('f-namesguess').value.trim()));
 $('skip-bonus').addEventListener('click', ()=> closeBonus(''));
+$('view-board-btn').addEventListener('click', ()=> openBoard());
 
 /* =======================================================================
    Board
@@ -612,6 +652,7 @@ $('skip-bonus').addEventListener('click', ()=> closeBonus(''));
 async function openBoard(){
   show($('screen-guess'),false);
   show($('screen-admin'),false);
+  show($('screen-britt'),false);
   show($('screen-board'),true);
   await refreshBoard();
 }
@@ -778,7 +819,7 @@ $('secret').addEventListener('click', ()=>{
 $('secret').addEventListener('keydown',e=>{ if(e.key==='Enter') openAdmin(); });
 
 function openAdmin(){
-  show($('screen-guess'),false); show($('screen-board'),false); show($('screen-load'),false);
+  show($('screen-guess'),false); show($('screen-board'),false); show($('screen-load'),false); show($('screen-britt'),false);
   show($('screen-admin'),true);
   show($('admin-gate'),true); show($('admin-panel'),false);
   $('f-pass').value=''; $('f-pass').focus();
@@ -811,10 +852,6 @@ async function renderAdmin(){
   $('name-dump').innerHTML = entries.filter(e=>e.nameGuess)
     .map(e=>'<div><span>'+esc(e.name)+'</span><b>'+esc(e.nameGuess)+'</b></div>').join('')
     || '<div><span>No name picks yet.</span></div>';
-
-  $('note-dump').innerHTML = entries.filter(e=>e.note)
-    .map(e=>'<div><b>'+esc(e.name)+'</b><p>'+esc(e.note)+'</p></div>').join('')
-    || '<div><p>No notes yet.</p></div>';
 }
 $('do-reveal').addEventListener('click', async ()=>{
   reveal.revealed=true;
@@ -847,6 +884,81 @@ $('do-reset').addEventListener('click', async ()=>{
     myId=null; entries=[];
     await renderAdmin(); toast('Board cleared.');
   }catch(e){ toast('Could not clear everything.'); }
+});
+
+/* =======================================================================
+   Britt's page
+   ======================================================================= */
+const BRITT_PASSCODE = "6132";   // change this to whatever you want
+
+function openBritt(){
+  show($('screen-guess'),false); show($('screen-board'),false); show($('screen-load'),false); show($('screen-admin'),false);
+  show($('screen-britt'),true);
+  show($('britt-gate'),true); show($('britt-panel'),false);
+  $('f-britt-pass').value=''; $('f-britt-pass').focus();
+}
+$('britt-back').addEventListener('click', ()=>{ show($('screen-britt'),false); myId?openBoard():show($('screen-guess'),true); });
+$('britt-exit').addEventListener('click', ()=>{ show($('screen-britt'),false); myId?openBoard():show($('screen-guess'),true); });
+
+$('do-britt-login').addEventListener('click', async ()=>{
+  if($('f-britt-pass').value.trim() !== BRITT_PASSCODE){ show($('britt-pass-err'),true); return; }
+  show($('britt-pass-err'),false);
+  show($('britt-gate'),false); show($('britt-panel'),true);
+  await renderBritt();
+});
+$('f-britt-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('do-britt-login').click(); });
+
+async function renderBritt(){
+  await loadReveal(); await loadEntries();
+  const wid = winnerId();
+  $('britt-guess-list').innerHTML = entries.map(e=>`
+    <div class="guess">
+      <div class="who">
+        <b>${esc(e.name)}${e.id===wid?'<span class="crown">Winner</span>':''}</b>
+        <em>${shortDate(e.date)}</em>
+      </div>
+      <dl>
+        <dt>Time</dt><dd>${esc(pretty12(e.time))}</dd>
+        <dt>Where</dt><dd>${esc(e.place)}</dd>
+        <dt>With</dt><dd>${esc(e.withWho)}</dd>
+        ${e.nameGuess?`<dt>Name</dt><dd>${esc(e.nameGuess)}</dd>`:''}
+        ${e.note?`<dt>Note</dt><dd>${esc(e.note)}</dd>`:''}
+      </dl>
+    </div>`).join('') || '<p class="sub">No guesses yet.</p>';
+
+  const subCount = new Set(entries.filter(e=>e.email).map(e=>e.email)).size;
+  $('britt-sub-count').textContent = subCount;
+}
+
+$('preset-false-labor').addEventListener('click', ()=>{
+  $('f-britt-message').value = "False alarm, everyone — still waiting! I'll update you the moment there's real news.";
+});
+$('preset-today').addEventListener('click', ()=>{
+  $('f-britt-message').value = "I have a feeling today might be the day! Fingers crossed.";
+});
+
+$('do-britt-send').addEventListener('click', async ()=>{
+  const message = $('f-britt-message').value.trim();
+  if(!message){ toast('Write a message first.'); return; }
+  if(!confirm('Send this update to every subscriber now?')) return;
+  const btn = $('do-britt-send');
+  btn.textContent='Sending...'; btn.disabled=true;
+  $('britt-send-status').textContent='';
+  try{
+    const res = await fetch('/api/broadcast', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ passcode: BRITT_PASSCODE, message })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'failed');
+    $('britt-send-status').textContent = 'Sent to '+data.sent+' subscriber'+(data.sent===1?'':'s')+(data.failed?(' — '+data.failed+' failed'):'')+'.';
+    $('f-britt-message').value='';
+    toast('Update sent.');
+  }catch(e){
+    $('britt-send-status').textContent='Could not send. Try again.';
+    toast('Could not send the update.');
+  }
+  btn.textContent='Send to everyone'; btn.disabled=false;
 });
 
 (function setDefaultGuessDate(){

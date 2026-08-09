@@ -5,39 +5,13 @@
 // gets a heads-up whenever any guessed day comes up, so the group keeps
 // watching together.
 const kv = require('../_lib/kv');
+const { sendEmail } = require('../_lib/mail');
 
-const K_ENTRY = 'shower:entry:';
 const NOTIFIED_PREFIX = 'shower:notified:';
 
 function todayKeyUTC() {
   const d = new Date();
   return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
-}
-
-async function loadEntries() {
-  const keys = await kv.keys(K_ENTRY);
-  const out = [];
-  for (const k of keys) {
-    const raw = await kv.get(k);
-    if (!raw) continue;
-    try { out.push(JSON.parse(raw)); } catch (e) { /* skip corrupt entry */ }
-  }
-  return out;
-}
-
-async function sendEmail(to, subject, text) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error('RESEND_API_KEY not configured');
-  const from = process.env.FROM_EMAIL || 'Baby Emishaw <onboarding@resend.dev>';
-  const resp = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to, subject, text }),
-  });
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => '');
-    throw new Error(`Resend send failed (${resp.status}): ${body}`);
-  }
 }
 
 function namesList(names) {
@@ -64,7 +38,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, skipped: 'already_notified', date: today });
     }
 
-    const entries = await loadEntries();
+    const entries = await kv.loadEntries();
     const todaysGuesses = entries.filter(e => e.date === today);
     if (!todaysGuesses.length) {
       return res.status(200).json({ ok: true, sent: 0, reason: 'no_guesses_today', date: today });

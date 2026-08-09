@@ -114,4 +114,19 @@ async function diagnose() {
   return result;
 }
 
-module.exports = { get, set, del, keys, diagnose };
+const ENTRY_PREFIX = 'shower:entry:';
+
+// Loads and parses every guess entry. Shared by anything that needs the
+// full board server-side (the daily reminder cron, Britt's broadcast tool).
+async function loadEntries() {
+  const entryKeys = await keys(ENTRY_PREFIX);
+  const out = [];
+  for (const k of entryKeys) {
+    const raw = await get(k);
+    if (!raw) continue;
+    try { out.push(JSON.parse(raw)); } catch (e) { /* skip corrupt entry */ }
+  }
+  return out;
+}
+
+module.exports = { get, set, del, keys, diagnose, loadEntries, ENTRY_PREFIX };

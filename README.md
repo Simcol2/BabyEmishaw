@@ -22,6 +22,10 @@ birth.
   every subscriber gets notified for every guessed day on the board, not
   just the day they personally picked. Sends through
   [Resend](https://resend.com).
+- `api/broadcast.js` — lets Britt send an ad-hoc email to every subscriber
+  on demand (a false-labor update, a "today might be the day" heads up),
+  separate from the automatic daily reminder. Shares the same mail sender
+  (`api/_lib/mail.js`) as the cron function.
 
 ## Deploy to Vercel
 
@@ -110,6 +114,36 @@ From the host panel you can:
 - Copy every email address guests left for reminders
 - See all the bonus middle-name guesses
 - Clear every entry and start over
+
+It's reachable two ways: the secret tap, or going straight to `/admin`
+(e.g. `https://your-project.vercel.app/admin`) — both land on the same
+passcode gate.
+
+## Britt's page
+
+`/BabyEmishaw` (e.g. `https://your-project.vercel.app/BabyEmishaw`) is a
+separate, separately-gated page just for Britt. Passcode:
+
+```js
+const BRITT_PASSCODE = "6132";
+```
+
+Change it in `index.html` the same way as the host passcode — same caveat,
+it's a soft gate, not real security. This page is deliberately kept
+separate from the host panel above: **notes guests leave for Britt only
+ever appear here**, never in the general host panel, so the person running
+logistics doesn't necessarily see them.
+
+From her page Britt can:
+- See every guess, including each guest's note to her inline
+- Send an on-demand email update to every subscriber — two one-tap presets
+  ("false labor, still waiting" / "I think today's the day") that fill in
+  the message box, or her own custom text — via `POST /api/broadcast`
+
+The broadcast endpoint checks the passcode server-side too (against a
+`BRITT_PASSCODE` env var, falling back to `6132` if it's not set) so the
+URL can't be hit blindly to spam guests — set that env var in Vercel if you
+change the passcode in the page, so the two stay in sync.
 
 ## Configuration
 
