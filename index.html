@@ -74,12 +74,13 @@ body{
 /* ---------- form ---------- */
 label{display:block;margin:16px 0 6px;font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink)}
 label span{display:block;text-transform:none;letter-spacing:0;font-family:var(--body);font-weight:400;font-size:12.5px;color:var(--ink-soft);margin-top:3px}
-input[type=text],input[type=date],input[type=time],input[type=email],input[type=password]{
+input[type=text],input[type=date],input[type=time],input[type=email],input[type=password],textarea{
   width:100%;padding:13px 12px;font-family:var(--body);font-size:16px;color:var(--ink);
   background:#fff;border:1px solid rgba(59,42,38,.22);border-radius:2px;outline:none;
   transition:border-color .15s,box-shadow .15s;
 }
-input:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(232,21,107,.16)}
+textarea{min-height:88px;resize:vertical;line-height:1.4}
+input:focus,textarea:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(232,21,107,.16)}
 button{font-family:var(--display);cursor:pointer;border:none;font-size:15px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
 .btn{
   display:block;width:100%;margin-top:24px;padding:16px;color:#fff;
@@ -161,6 +162,10 @@ button{font-family:var(--display);cursor:pointer;border:none;font-size:15px;lett
 .stat i{font-style:normal;font-family:var(--display);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
 .rowlist{font-size:13.5px}
 .rowlist div{padding:9px 0;border-top:1px solid rgba(200,154,44,.26);display:flex;justify-content:space-between;gap:10px}
+.notelist{font-size:13.5px}
+.notelist div{padding:10px 0;border-top:1px solid rgba(200,154,44,.26)}
+.notelist b{font-family:var(--display);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:4px}
+.notelist p{margin:0;color:var(--ink);white-space:pre-wrap}
 .copybox{width:100%;font-family:var(--body);font-size:13px;padding:10px;border:1px solid rgba(59,42,38,.22);border-radius:2px;min-height:90px;background:#fff}
 .danger{border-color:rgba(232,21,107,.5)}
 footer{text-align:center;padding:30px 0 10px;font-size:11.5px;color:var(--ink-soft);letter-spacing:.04em}
@@ -218,13 +223,18 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
     </label>
     <input type="time" id="f-time" value="03:00">
 
-    <label for="f-place">Where she will be
-      <span>Grocery store, shower, mid nap, anywhere.</span>
+    <label for="f-place">When her water breaks, where will she be?
+      <span>(example: what will she be doing?)</span>
     </label>
     <input type="text" id="f-place" placeholder="Be specific, it is funnier">
 
     <label for="f-with">Who she will be with</label>
     <input type="text" id="f-with" placeholder="Name a name">
+
+    <label for="f-note">Leave a note for Britt
+      <span>Optional</span>
+    </label>
+    <textarea id="f-note" placeholder="Is there anything you want Britt to know? Words of encouragement, a joke to calm her nerves, etc."></textarea>
 
     <div id="guess-err" class="err hidden"></div>
     <button class="btn" id="submit-guess">Lock in my guess</button>
@@ -333,6 +343,10 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
       <div class="rule"></div>
       <h2>Name guesses</h2>
       <div class="rowlist" id="name-dump"></div>
+
+      <div class="rule"></div>
+      <h2>Notes for Britt</h2>
+      <div class="notelist" id="note-dump"></div>
 
       <div class="rule"></div>
       <button class="btn ghost" id="admin-exit">Back to the board</button>
@@ -537,6 +551,7 @@ $('submit-guess').addEventListener('click', async ()=>{
   const time  = $('f-time').value;
   const place = $('f-place').value.trim();
   const withWho = $('f-with').value.trim();
+  const note = $('f-note').value.trim();
   const err = $('guess-err');
 
   const missing = [];
@@ -558,7 +573,7 @@ $('submit-guess').addEventListener('click', async ()=>{
 
   const entry = {
     id: 'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
-    name, date, time, place, withWho,
+    name, date, time, place, withWho, note,
     nameGuess:'', email:'', ts: Date.now()
   };
   const btn = $('submit-guess');
@@ -796,6 +811,10 @@ async function renderAdmin(){
   $('name-dump').innerHTML = entries.filter(e=>e.nameGuess)
     .map(e=>'<div><span>'+esc(e.name)+'</span><b>'+esc(e.nameGuess)+'</b></div>').join('')
     || '<div><span>No name picks yet.</span></div>';
+
+  $('note-dump').innerHTML = entries.filter(e=>e.note)
+    .map(e=>'<div><b>'+esc(e.name)+'</b><p>'+esc(e.note)+'</p></div>').join('')
+    || '<div><p>No notes yet.</p></div>';
 }
 $('do-reveal').addEventListener('click', async ()=>{
   reveal.revealed=true;
