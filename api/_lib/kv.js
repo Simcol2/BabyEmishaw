@@ -1,24 +1,33 @@
 // Shared key/value storage helpers for the guessing game board.
-// Backed by Vercel KV (Upstash Redis) in production. When no KV store is
-// linked (e.g. local `vercel dev` without env vars), falls back to an
+// Backed by Upstash Redis (via @upstash/redis) in production. When no store
+// is linked (e.g. local `vercel dev` without env vars), falls back to an
 // in-memory store scoped to the running process so local testing still works.
 // NOTE: the in-memory fallback does NOT persist across serverless
-// invocations on Vercel - a real KV store must be connected for production.
+// invocations on Vercel - a real Redis store must be connected for
+// production, or guesses will silently vanish between requests.
 
 let kvClient = null;
 let kvUnavailableReason = null;
 
 function getKv() {
   if (kvClient || kvUnavailableReason) return kvClient;
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+
+  // Vercel's old standalone "KV" product (KV_REST_API_URL / KV_REST_API_TOKEN)
+  // was folded into the Marketplace under Upstash. Depending on which flow
+  // the dashboard puts you through, it may inject the Vercel-KV-style names
+  // or the raw Upstash names (UPSTASH_REDIS_REST_URL / _TOKEN) - accept
+  // either so connecting a store through any current path actually works.
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) {
     kvUnavailableReason = 'no_kv_env';
     return null;
   }
   try {
     // Lazy require so the module still loads (for the memory fallback)
-    // even if @vercel/kv isn't installed yet in a fresh checkout.
-    const { kv } = require('@vercel/kv');
-    kvClient = kv;
+    // even if @upstash/redis isn't installed yet in a fresh checkout.
+    const { Redis } = require('@upstash/redis');
+    kvClient = new Redis({ url, token });
   } catch (e) {
     kvUnavailableReason = 'kv_module_missing';
   }

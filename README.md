@@ -12,9 +12,9 @@ birth.
   build step.
 - `api/storage.js` — a small serverless function that the page calls for
   anything that needs to be **shared across every guest's phone** (guesses,
-  the reveal state). It's backed by [Vercel KV](https://vercel.com/docs/storage/vercel-kv)
-  (Upstash Redis) in production. `api/_lib/kv.js` holds the actual read/write
-  logic, shared with the cron function below.
+  the reveal state). It's backed by [Upstash Redis](https://upstash.com) via
+  `@upstash/redis` in production. `api/_lib/kv.js` holds the actual
+  read/write logic, shared with the cron function below.
 - Anything **private to one phone** (which entry is "mine") is kept in that
   browser's `localStorage` and never leaves the device.
 - `api/cron/daily-reminder.js` — runs once a day (see `vercel.json`). If any
@@ -30,18 +30,33 @@ birth.
 2. In the [Vercel dashboard](https://vercel.com/new), import the
    `Simcol2/BabyEmishaw` repository. No build settings are needed — Vercel
    auto-detects the static `index.html` and the `api/` serverless function.
-3. **Connect a KV store** (required for guesses to be shared between
-   guests):
-   - In the new Vercel project, go to **Storage → Create Database → KV**
-     (Upstash Redis under the hood).
-   - Create it and choose **Connect to Project** for this project.
-   - Vercel automatically injects `KV_REST_API_URL` and `KV_REST_API_TOKEN`
-     into the project's environment variables — no manual copy/paste needed.
-   - Redeploy (or it will redeploy automatically once the store is linked).
+3. **Connect a Redis store** (required — without this, guesses appear to
+   save but silently vanish, see "Why did my guess disappear?" below):
+   - In the Vercel project, open the **Storage** tab.
+   - Vercel's standalone "KV" product was retired and folded into the
+     **Marketplace**, so look for **Create Database** / **Browse
+     Marketplace** and pick a Redis provider (**Upstash** is the standard
+     one — "Upstash for Redis").
+   - Create it, then **Connect** it to this project.
+   - Vercel injects the store's env vars automatically on connect. Depending
+     on the exact flow it may use either `KV_REST_API_URL` /
+     `KV_REST_API_TOKEN` (legacy KV-compatible names) or
+     `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (native Upstash
+     names) — `api/_lib/kv.js` checks for both, so either is fine. Open
+     **Settings → Environment Variables** afterward and confirm one of those
+     pairs is actually there.
+   - Redeploy (Vercel usually does this automatically once the store is
+     connected — check the Deployments tab for a fresh one).
 
-Without a connected KV store, `api/storage.js` falls back to an in-memory
-store so the app still *runs*, but guesses won't persist or be shared
-between visitors in production — only useful for local testing.
+**Why did my guess disappear?** Without a connected store, `api/_lib/kv.js`
+silently falls back to an in-memory `Map`. That fallback only lives for the
+life of one serverless function instance — Vercel spins up separate,
+short-lived instances per request, so "memory" from one guess is often gone
+by the time the next request comes in (different instance, cold start,
+redeploy). The form and board still work, so nothing *looks* broken, but
+nothing durable is actually being saved. If guesses vanish, it means step 3
+above isn't actually wired up yet — go check the Storage tab and the env
+vars.
 
 4. **Set up email reminders** (optional — the board works fine without
    this, guests just won't be able to leave a reminder email that actually
