@@ -114,9 +114,12 @@ button{font-family:var(--display);cursor:pointer;border:none;font-size:15px;lett
 .today-banner strong{display:block;font-family:var(--num);font-weight:700;font-size:24px;line-height:1.2;margin-top:6px}
 
 /* ---------- calendar ---------- */
-.cal-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .cal-head .m{font-family:var(--num);font-style:italic;font-size:22px}
-.cal-head .y{font-family:var(--display);font-size:11px;letter-spacing:.3em;color:var(--gold)}
+.cal-head .y{font-family:var(--display);font-size:11px;letter-spacing:.3em;color:var(--gold);margin-left:8px}
+.cal-nav{background:#fff;border:1px solid var(--line);border-radius:2px;width:34px;height:34px;font-family:var(--num);font-size:19px;color:var(--pink-deep);cursor:pointer;line-height:1;padding:0}
+.cal-nav:disabled{opacity:.3;cursor:not-allowed}
+.cal-nav:active:not(:disabled){transform:translateY(1px)}
 .dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
 .dow div{text-align:center;font-family:var(--display);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
 .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
@@ -130,8 +133,6 @@ button{font-family:var(--display);cursor:pointer;border:none;font-size:15px;lett
 .pips i{width:4px;height:4px;border-radius:50%;background:var(--pink);display:block}
 .cal-detail{margin-top:14px;padding:14px;background:var(--cream);border:1px solid var(--line);border-radius:2px;font-size:14px}
 .cal-detail b{font-family:var(--display);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:8px}
-.spill{margin-top:14px;font-size:13px;color:var(--ink-soft)}
-.spill b{font-family:var(--display);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:11.5px;color:var(--ink-soft)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 
@@ -194,7 +195,7 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
     </svg>
     <p class="eyebrow">A Baby Shower Guessing Game</p>
     <h1>Baby<br><em>Emishaw</em></h1>
-    <p class="tagline">Four guesses. One winner. No pressure.</p>
+    <p class="tagline">Do you know when your Britt's will pop?</p>
   </div>
 
   <!-- ============ LOADING ============ -->
@@ -267,11 +268,14 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
     <div class="card">
       <h2>The Board</h2>
       <p class="sub">Every pink square is somebody's bet.</p>
-      <div class="cal-head"><span class="m" id="cal-month">October</span><span class="y">2026</span></div>
+      <div class="cal-head">
+        <button class="cal-nav" id="cal-prev" aria-label="Previous month">‹</button>
+        <span><span class="m" id="cal-month">October</span><span class="y">2026</span></span>
+        <button class="cal-nav" id="cal-next" aria-label="Next month">›</button>
+      </div>
       <div class="dow"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
       <div class="grid" id="cal-grid"></div>
       <div id="cal-detail" class="cal-detail hidden"></div>
-      <div id="spill" class="spill hidden"></div>
       <div class="legend">
         <span><i style="background:var(--pink-wash);border:1px solid rgba(232,21,107,.35)"></i>Has guesses</span>
         <span><i style="background:#fff;border:2px solid var(--teal)"></i>Today</span>
@@ -783,10 +787,18 @@ function byDate(){
   entries.forEach(e=>{ (map[e.date]=map[e.date]||[]).push(e); });
   return map;
 }
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CAL_MIN_MONTH = 9, CAL_MAX_MONTH = 11;   // guesses only fall Sep 26 - Nov 15 2026
+let calMonth = 10;                              // October 2026, the default view
+
 function renderCalendar(){
   const map = byDate();
   const grid = $('cal-grid'); grid.innerHTML='';
-  const y=2026, m=10;                     // October 2026
+  const y=2026, m=calMonth;
+  $('cal-month').textContent = MONTH_NAMES[m-1];
+  $('cal-prev').disabled = (calMonth<=CAL_MIN_MONTH);
+  $('cal-next').disabled = (calMonth>=CAL_MAX_MONTH);
   const first = new Date(y, m-1, 1).getDay();
   const days  = new Date(y, m, 0).getDate();
   const tk = todayKey();
@@ -810,16 +822,15 @@ function renderCalendar(){
     grid.appendChild(c);
   }
   showDetail();
-
-  // September and November spillover
-  const outside = Object.keys(map).filter(k=>!k.startsWith('2026-10')).sort();
-  const sp = $('spill');
-  if(outside.length){
-    sp.innerHTML = '<b>Outside October</b><br>' + outside.map(k=>
-      shortDate(k)+': '+map[k].map(e=>esc(e.name)).join(', ')).join('<br>');
-    show(sp,true);
-  } else show(sp,false);
 }
+$('cal-prev').addEventListener('click', ()=>{
+  if(calMonth<=CAL_MIN_MONTH) return;
+  calMonth--; selectedKey=null; renderCalendar();
+});
+$('cal-next').addEventListener('click', ()=>{
+  if(calMonth>=CAL_MAX_MONTH) return;
+  calMonth++; selectedKey=null; renderCalendar();
+});
 function showDetail(){
   const det=$('cal-detail');
   if(!selectedKey){ show(det,false); return; }
