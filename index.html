@@ -129,11 +129,14 @@ a.btn{font-family:var(--display);cursor:pointer;font-size:15px;letter-spacing:.1
 .cell.has{background:var(--pink-wash);border-color:rgba(232,21,107,.35);color:var(--pink-deep);cursor:pointer;font-weight:700}
 .cell.today{outline:2px solid var(--teal);outline-offset:-2px}
 .cell.due{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:900}
+.cell.birthday{background:var(--pink-hot);border-color:var(--pink-hot);color:#fff;font-weight:900}
 .cell.sel{outline:2px solid var(--pink);outline-offset:-2px}
+.cake{position:absolute;top:2px;right:2px;font-size:9px;line-height:1}
 .pips{display:flex;gap:2px;margin-top:3px;height:5px}
 .pips i{width:4px;height:4px;border-radius:50%;background:var(--pink);display:block}
 .cal-detail{margin-top:14px;padding:14px;background:var(--cream);border:1px solid var(--line);border-radius:2px;font-size:14px}
 .cal-detail b{font-family:var(--display);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:8px}
+.birthday-banner{background:linear-gradient(100deg,var(--pink-hot),var(--gold-lite));color:#fff;padding:10px 12px;border-radius:2px;font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.04em;text-align:center;margin:8px 0}
 .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:11.5px;color:var(--ink-soft)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 
@@ -281,6 +284,7 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
         <span><i style="background:var(--pink-wash);border:1px solid rgba(232,21,107,.35)"></i>Has guesses</span>
         <span><i style="background:#fff;border:2px solid var(--teal)"></i>Today</span>
         <span id="lg-due" class="hidden"><i style="background:var(--gold)"></i>Due date</span>
+        <span><i style="background:var(--pink-hot)"></i>Stephanie's Birthday</span>
       </div>
       <a href="/game" class="btn gold">Play the Game</a>
     </div>
@@ -797,6 +801,10 @@ const MONTH_NAMES = ['January','February','March','April','May','June','July','A
 const CAL_MIN_MONTH = 9, CAL_MAX_MONTH = 11;   // guesses only fall Sep 26 - Nov 15 2026
 let calMonth = 10;                              // October 2026, the default view
 
+const SPECIAL_DAYS = {
+  '2026-10-04': { label: "Stephanie's Birthday" },
+};
+
 function renderCalendar(){
   const map = byDate();
   const grid = $('cal-grid'); grid.innerHTML='';
@@ -814,12 +822,15 @@ function renderCalendar(){
   for(let d=1; d<=days; d++){
     const key = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const list = map[key]||[];
+    const special = SPECIAL_DAYS[key];
     const c=document.createElement('div');
     c.className='cell'+(list.length?' has':'')+(key===tk?' today':'')
       +((reveal.revealed && key===reveal.dueDate)?' due':'')
+      +(special?' birthday':'')
       +(key===selectedKey?' sel':'');
-    c.innerHTML = d + (list.length? '<span class="pips">'+list.slice(0,3).map(()=>'<i></i>').join('')+'</span>' : '');
-    if(list.length){
+    c.innerHTML = d + (special ? '<span class="cake">🎂</span>' : '')
+      + (list.length? '<span class="pips">'+list.slice(0,3).map(()=>'<i></i>').join('')+'</span>' : '');
+    if(list.length || special){
       c.setAttribute('role','button'); c.setAttribute('tabindex','0');
       c.addEventListener('click',()=>{ selectedKey = (selectedKey===key?null:key); renderCalendar(); showDetail(); });
       c.addEventListener('keydown',ev=>{ if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();c.click();} });
@@ -839,10 +850,20 @@ $('cal-next').addEventListener('click', ()=>{
 function showDetail(){
   const det=$('cal-detail');
   if(!selectedKey){ show(det,false); return; }
-  const list=byDate()[selectedKey]||[];
-  det.innerHTML = '<b>'+prettyDate(selectedKey)+'</b>' + list.map(e=>
-    esc(e.name)+' &middot; '+pretty12(e.time)+' &middot; '+esc(e.place)+' with '+esc(e.withWho)
-  ).join('<br>');
+  const list = byDate()[selectedKey]||[];
+  const special = SPECIAL_DAYS[selectedKey];
+  let html = '<b>'+prettyDate(selectedKey)+'</b>';
+  if(special){
+    html += '<div class="birthday-banner">🎉 '+esc(special.label)+' 🎉</div>';
+  }
+  if(list.length){
+    html += list.map(e=>
+      esc(e.name)+' &middot; '+pretty12(e.time)+' &middot; '+esc(e.place)+' with '+esc(e.withWho)
+    ).join('<br>');
+  } else if(special){
+    html += '<p style="margin:8px 0 0;color:var(--ink-soft);font-size:13px">No guesses on this day yet.</p>';
+  }
+  det.innerHTML = html;
   show(det,true);
 }
 function winnerId(){
