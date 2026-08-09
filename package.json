@@ -1,0 +1,12 @@
+{
+  "name": "baby-emishaw-shower",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Guess-the-day baby shower game for Baby Emishaw",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@vercel/kv": "^2.0.0"
+  }
+}

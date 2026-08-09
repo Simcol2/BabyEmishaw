@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baby Emishaw · Guess the Day</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600;700&family=Bodoni+Moda:opsz,wght@6..96,400;6..96,700;6..96,900&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#3B2A26;
+  --ink-soft:#7A625B;
+  --cream:#FFFBF3;
+  --paper:#FFFFFF;
+  --pink:#E8156B;
+  --pink-deep:#A8004C;
+  --pink-hot:#FF4D97;
+  --pink-wash:#FFE3EE;
+  --gold:#C89A2C;
+  --gold-lite:#EBC968;
+  --teal:#0F8B84;
+  --line:rgba(200,154,44,.38);
+  --shadow:0 12px 30px rgba(59,42,38,.10);
+  --display:'Josefin Sans','Futura','Century Gothic','Avenir Next',sans-serif;
+  --num:'Bodoni Moda','Didot','Bodoni MT',Georgia,serif;
+  --body:'Karla','Avenir Next','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--cream);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:16px;
+  line-height:1.5;
+  background-image:
+    radial-gradient(circle at 12% 6%, rgba(235,201,104,.22), transparent 42%),
+    radial-gradient(circle at 88% 2%, rgba(255,77,151,.14), transparent 38%);
+  background-attachment:fixed;
+  min-height:100vh;
+}
+.wrap{max-width:560px;margin:0 auto;padding:22px 18px 64px}
+.hidden{display:none !important}
+
+/* ---------- header / signature starburst ---------- */
+.crest{position:relative;text-align:center;padding:22px 0 10px}
+.burst{position:absolute;left:50%;top:6px;transform:translateX(-50%);width:190px;height:190px;opacity:.85;pointer-events:none}
+.eyebrow{
+  position:relative;font-family:var(--display);font-weight:600;font-size:11px;
+  letter-spacing:.42em;text-transform:uppercase;color:var(--gold);margin:0 0 6px;padding-left:.42em;
+}
+.crest h1{
+  position:relative;margin:0;font-family:var(--num);font-weight:900;font-size:clamp(38px,13vw,60px);
+  line-height:.92;letter-spacing:-.01em;color:var(--pink-deep);
+}
+.crest h1 em{font-style:italic;font-weight:400;color:var(--gold)}
+.tagline{position:relative;margin:10px 0 0;font-size:14px;color:var(--ink-soft);letter-spacing:.02em}
+.rule{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:20px 0}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--paper);border:1px solid var(--line);border-radius:3px;
+  padding:22px 20px;box-shadow:var(--shadow);margin-bottom:18px;position:relative;
+}
+.card::after{content:"";position:absolute;inset:5px;border:1px solid rgba(200,154,44,.20);border-radius:2px;pointer-events:none}
+.card > *{position:relative;z-index:1}
+.card h2{
+  margin:0 0 4px;font-family:var(--display);font-weight:600;font-size:13px;
+  letter-spacing:.28em;text-transform:uppercase;color:var(--gold);padding-left:.28em;
+}
+.card p.sub{margin:0 0 18px;font-size:14px;color:var(--ink-soft)}
+
+/* ---------- form ---------- */
+label{display:block;margin:16px 0 6px;font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink)}
+label span{display:block;text-transform:none;letter-spacing:0;font-family:var(--body);font-weight:400;font-size:12.5px;color:var(--ink-soft);margin-top:3px}
+input[type=text],input[type=date],input[type=time],input[type=email],input[type=password]{
+  width:100%;padding:13px 12px;font-family:var(--body);font-size:16px;color:var(--ink);
+  background:#fff;border:1px solid rgba(59,42,38,.22);border-radius:2px;outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+input:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(232,21,107,.16)}
+button{font-family:var(--display);cursor:pointer;border:none;font-size:15px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+.btn{
+  display:block;width:100%;margin-top:24px;padding:16px;color:#fff;
+  background:var(--pink);border-radius:2px;box-shadow:0 6px 0 var(--pink-deep);
+  transition:transform .08s,box-shadow .08s;
+}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--pink-deep)}
+.btn.gold{background:var(--gold);box-shadow:0 6px 0 #8E6C14;color:#fff}
+.btn.gold:active{box-shadow:0 2px 0 #8E6C14}
+.btn.ghost{background:transparent;color:var(--ink-soft);box-shadow:none;border:1px solid var(--line);margin-top:12px}
+.btn.ghost:active{transform:none}
+.btn.small{width:auto;display:inline-block;padding:10px 16px;font-size:12px;margin-top:0}
+.err{margin-top:14px;padding:11px 12px;background:var(--pink-wash);border-left:3px solid var(--pink);font-size:14px;color:var(--pink-deep)}
+
+/* ---------- placard ---------- */
+.placard{text-align:center;padding:30px 18px 26px;background:var(--paper)}
+.placard .kicker{font-family:var(--display);font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--gold);padding-left:.4em}
+.date-line{display:flex;align-items:baseline;justify-content:center;gap:12px;margin:12px 0 4px;flex-wrap:wrap}
+.month{font-family:var(--num);font-weight:400;font-style:italic;font-size:clamp(30px,9vw,44px);color:var(--ink)}
+.daynum{font-family:var(--num);font-weight:900;font-size:clamp(58px,20vw,92px);line-height:.9;color:var(--pink)}
+.blank{display:inline-block;width:1.5em;border-bottom:5px solid var(--gold);height:.55em}
+.placard .note{margin:14px 0 0;font-size:13.5px;color:var(--ink-soft)}
+.countdown{display:flex;justify-content:center;gap:8px;margin-top:20px}
+.tick{background:var(--cream);border:1px solid var(--line);border-radius:2px;padding:10px 6px;min-width:62px}
+.tick b{display:block;font-family:var(--num);font-weight:700;font-size:26px;line-height:1;color:var(--ink)}
+.tick i{display:block;font-style:normal;font-family:var(--display);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-top:6px}
+
+/* ---------- today banner ---------- */
+.today-banner{background:linear-gradient(100deg,var(--pink),var(--pink-hot));color:#fff;padding:18px 20px;border-radius:3px;margin-bottom:18px;box-shadow:var(--shadow)}
+.today-banner .kicker{font-family:var(--display);font-size:10px;letter-spacing:.34em;text-transform:uppercase;opacity:.9}
+.today-banner strong{display:block;font-family:var(--num);font-weight:700;font-size:24px;line-height:1.2;margin-top:6px}
+
+/* ---------- calendar ---------- */
+.cal-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.cal-head .m{font-family:var(--num);font-style:italic;font-size:22px}
+.cal-head .y{font-family:var(--display);font-size:11px;letter-spacing:.3em;color:var(--gold)}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.dow div{text-align:center;font-family:var(--display);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cell{aspect-ratio:1;border:1px solid rgba(59,42,38,.10);border-radius:2px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--num);font-size:15px;color:var(--ink-soft);position:relative}
+.cell.empty{border:none;background:transparent}
+.cell.has{background:var(--pink-wash);border-color:rgba(232,21,107,.35);color:var(--pink-deep);cursor:pointer;font-weight:700}
+.cell.today{outline:2px solid var(--teal);outline-offset:-2px}
+.cell.due{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:900}
+.cell.sel{outline:2px solid var(--pink);outline-offset:-2px}
+.pips{display:flex;gap:2px;margin-top:3px;height:5px}
+.pips i{width:4px;height:4px;border-radius:50%;background:var(--pink);display:block}
+.cal-detail{margin-top:14px;padding:14px;background:var(--cream);border:1px solid var(--line);border-radius:2px;font-size:14px}
+.cal-detail b{font-family:var(--display);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:8px}
+.spill{margin-top:14px;font-size:13px;color:var(--ink-soft)}
+.spill b{font-family:var(--display);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:11.5px;color:var(--ink-soft)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* ---------- guess list ---------- */
+.guess{border-top:1px solid rgba(200,154,44,.28);padding:16px 0}
+.guess:first-of-type{border-top:none}
+.guess .who{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.guess .who b{font-family:var(--display);font-size:15px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.guess .who em{font-family:var(--num);font-style:normal;font-weight:700;font-size:19px;color:var(--pink)}
+.guess dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:10px 0 0;font-size:14px}
+.guess dt{font-family:var(--display);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);padding-top:3px}
+.guess dd{margin:0;color:var(--ink)}
+.crown{background:var(--gold);color:#fff;font-family:var(--display);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;padding:3px 7px;border-radius:2px;margin-left:8px}
+.mine{background:var(--teal);color:#fff;font-family:var(--display);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;padding:3px 7px;border-radius:2px;margin-left:8px}
+
+/* ---------- modal ---------- */
+.scrim{position:fixed;inset:0;background:rgba(59,42,38,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.modal{background:var(--paper);border:1px solid var(--gold);border-radius:3px;max-width:400px;width:100%;padding:28px 22px;box-shadow:0 24px 60px rgba(59,42,38,.3);animation:pop .28s cubic-bezier(.2,1.3,.4,1)}
+@keyframes pop{from{transform:scale(.9) translateY(10px);opacity:0}to{transform:none;opacity:1}}
+.modal .star{display:block;margin:0 auto 12px}
+.modal h3{margin:0;text-align:center;font-family:var(--num);font-weight:900;font-size:27px;color:var(--pink-deep);line-height:1.1}
+.modal p{text-align:center;font-size:14px;color:var(--ink-soft);margin:10px 0 4px}
+
+/* ---------- admin ---------- */
+.stat{display:flex;gap:10px;margin:6px 0 18px}
+.stat div{flex:1;background:var(--cream);border:1px solid var(--line);padding:12px 8px;text-align:center;border-radius:2px}
+.stat b{display:block;font-family:var(--num);font-size:26px;font-weight:700}
+.stat i{font-style:normal;font-family:var(--display);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.rowlist{font-size:13.5px}
+.rowlist div{padding:9px 0;border-top:1px solid rgba(200,154,44,.26);display:flex;justify-content:space-between;gap:10px}
+.copybox{width:100%;font-family:var(--body);font-size:13px;padding:10px;border:1px solid rgba(59,42,38,.22);border-radius:2px;min-height:90px;background:#fff}
+.danger{border-color:rgba(232,21,107,.5)}
+footer{text-align:center;padding:30px 0 10px;font-size:11.5px;color:var(--ink-soft);letter-spacing:.04em}
+footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:var(--gold);cursor:pointer;font-size:16px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:2px;font-size:14px;z-index:80;box-shadow:var(--shadow)}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="crest">
+    <svg class="burst" viewBox="0 0 200 200" aria-hidden="true">
+      <g stroke="#EBC968" stroke-width="1.1" fill="none">
+        <circle cx="100" cy="100" r="72" opacity=".55"/>
+        <circle cx="100" cy="100" r="54" opacity=".35"/>
+      </g>
+      <g stroke="#C89A2C" stroke-width="1.2" stroke-linecap="round" opacity=".75">
+        <path d="M100 8v34M100 158v34M8 100h34M158 100h34"/>
+        <path d="M35 35l24 24M141 141l24 24M165 35l-24 24M59 141l-24 24"/>
+      </g>
+      <circle cx="100" cy="8" r="3.2" fill="#E8156B"/><circle cx="100" cy="192" r="3.2" fill="#E8156B"/>
+      <circle cx="8" cy="100" r="3.2" fill="#E8156B"/><circle cx="192" cy="100" r="3.2" fill="#E8156B"/>
+    </svg>
+    <p class="eyebrow">A Baby Shower Guessing Game</p>
+    <h1>Baby<br><em>Emishaw</em></h1>
+    <p class="tagline">Four guesses. One winner. No pressure.</p>
+  </div>
+
+  <!-- ============ LOADING ============ -->
+  <section id="screen-load" class="card">
+    <h2>One moment</h2>
+    <p class="sub">Setting the table.</p>
+  </section>
+
+  <!-- ============ GUESS FORM ============ -->
+  <section id="screen-guess" class="card hidden">
+    <h2>Your Guess</h2>
+    <p class="sub">One entry per guest. Once you submit, the board opens up and you can see what everyone else picked.</p>
+
+    <label for="f-name">Your name
+      <span>So we know whose guess is whose.</span>
+    </label>
+    <input type="text" id="f-name" autocomplete="name" placeholder="First and last">
+
+    <label for="f-date">The day she arrives
+      <span>Pick a date on the calendar.</span>
+    </label>
+    <input type="date" id="f-date" min="2026-09-26" max="2026-11-15" value="2026-10-24">
+
+    <label for="f-time">Time of day
+      <span>When the water breaks.</span>
+    </label>
+    <input type="time" id="f-time" value="03:00">
+
+    <label for="f-place">Where she will be
+      <span>Grocery store, shower, mid nap, anywhere.</span>
+    </label>
+    <input type="text" id="f-place" placeholder="Be specific, it is funnier">
+
+    <label for="f-with">Who she will be with</label>
+    <input type="text" id="f-with" placeholder="Name a name">
+
+    <div id="guess-err" class="err hidden"></div>
+    <button class="btn" id="submit-guess">Lock in my guess</button>
+  </section>
+
+  <!-- ============ BOARD ============ -->
+  <section id="screen-board" class="hidden">
+
+    <div id="today-banner" class="today-banner hidden">
+      <span class="kicker">Today on the board</span>
+      <strong id="today-text"></strong>
+    </div>
+
+    <div class="card placard">
+      <span class="kicker">Due Date</span>
+      <div class="date-line">
+        <span class="month">October</span>
+        <span class="daynum" id="daynum"><span class="blank"></span></span>
+      </div>
+      <p class="note" id="placard-note">The number stays hidden until the reveal.</p>
+      <div class="countdown hidden" id="countdown">
+        <div class="tick"><b id="cd-d">0</b><i>Days</i></div>
+        <div class="tick"><b id="cd-h">0</b><i>Hrs</i></div>
+        <div class="tick"><b id="cd-m">0</b><i>Min</i></div>
+        <div class="tick"><b id="cd-s">0</b><i>Sec</i></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>The Board</h2>
+      <p class="sub">Every pink square is somebody's bet.</p>
+      <div class="cal-head"><span class="m" id="cal-month">October</span><span class="y">2026</span></div>
+      <div class="dow"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+      <div class="grid" id="cal-grid"></div>
+      <div id="cal-detail" class="cal-detail hidden"></div>
+      <div id="spill" class="spill hidden"></div>
+      <div class="legend">
+        <span><i style="background:var(--pink-wash);border:1px solid rgba(232,21,107,.35)"></i>Has guesses</span>
+        <span><i style="background:#fff;border:2px solid var(--teal)"></i>Today</span>
+        <span id="lg-due" class="hidden"><i style="background:var(--gold)"></i>Due date</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Everyone's Guesses</h2>
+      <p class="sub"><span id="count-line"></span></p>
+      <div id="guess-list"></div>
+      <button class="btn ghost" id="refresh">Refresh the board</button>
+    </div>
+
+    <div class="card" id="email-card">
+      <h2>Reminder</h2>
+      <p class="sub">Want a heads up when your guessed day arrives? Leave your email and you will get a nudge.</p>
+      <label for="f-email">Email address</label>
+      <input type="email" id="f-email" placeholder="you@email.com" autocomplete="email">
+      <button class="btn gold" id="save-email">Send me a reminder</button>
+    </div>
+
+  </section>
+
+  <!-- ============ ADMIN ============ -->
+  <section id="screen-admin" class="hidden">
+    <div class="card" id="admin-gate">
+      <h2>Host Access</h2>
+      <p class="sub">Enter the host passcode.</p>
+      <input type="password" id="f-pass" placeholder="Passcode">
+      <div id="pass-err" class="err hidden">That passcode is not right. Try again.</div>
+      <button class="btn" id="do-login">Unlock</button>
+      <button class="btn ghost" id="admin-back">Back to the board</button>
+    </div>
+
+    <div class="card hidden" id="admin-panel">
+      <h2>Host Panel</h2>
+      <p class="sub">Only you see this screen.</p>
+      <div class="stat">
+        <div><b id="s-entries">0</b><i>Guesses</i></div>
+        <div><b id="s-emails">0</b><i>Emails</i></div>
+        <div><b id="s-names">0</b><i>Name picks</i></div>
+      </div>
+
+      <label for="f-realdate">The real due date
+        <span>Set it before you reveal. Change it any time.</span>
+      </label>
+      <input type="date" id="f-realdate" value="2026-10-24">
+      <label for="f-realtime">Countdown starts from</label>
+      <input type="time" id="f-realtime" value="00:00">
+
+      <button class="btn gold" id="do-reveal">Reveal the due date</button>
+      <button class="btn ghost hidden" id="do-hide">Hide it again</button>
+
+      <div class="rule"></div>
+
+      <label for="f-actual">She arrived on
+        <span>Fill this in after the birth and the closest guess gets crowned.</span>
+      </label>
+      <input type="date" id="f-actual">
+      <button class="btn" id="do-actual">Crown the winner</button>
+
+      <div class="rule"></div>
+
+      <h2>Emails collected</h2>
+      <p class="sub">Copy these out to send your reminders.</p>
+      <textarea class="copybox" id="email-dump" readonly></textarea>
+      <button class="btn ghost small" id="copy-emails" style="margin-top:10px">Copy emails</button>
+
+      <div class="rule"></div>
+      <h2>Name guesses</h2>
+      <div class="rowlist" id="name-dump"></div>
+
+      <div class="rule"></div>
+      <button class="btn ghost" id="admin-exit">Back to the board</button>
+      <button class="btn ghost danger" id="do-reset">Clear every entry</button>
+    </div>
+  </section>
+
+  <footer>
+    Made with love for Baby Emishaw <span class="dot" id="secret" role="button" tabindex="0" aria-label="Host access">✦</span>
+  </footer>
+</div>
+
+<!-- ============ BONUS MODAL ============ -->
+<div id="bonus" class="scrim hidden">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bonus-title">
+    <svg class="star" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+      <path d="M20 1l3.4 12.4L36 10l-9.6 9L39 24l-13.2.6L28 37l-8-9.6L12 37l2.2-12.4L1 24l12.6-5L4 10l12.6 3.4z" fill="#C89A2C"/>
+    </svg>
+    <h3 id="bonus-title">Bonus round</h3>
+    <p>Emishaw is her name. But what is her middle name going to be? Take a swing.</p>
+    <label for="f-namesguess">Your pick</label>
+    <input type="text" id="f-namesguess" placeholder="One name, any name">
+    <button class="btn gold" id="save-namesguess">Submit my pick</button>
+    <button class="btn ghost" id="skip-bonus">Skip this one</button>
+  </div>
+</div>
+
+<script>
+/* =======================================================================
+   window.storage shim
+   -----------------------------------------------------------------------
+   The game code below expects a `window.storage` object with an async
+   get/set/list/delete API, keyed on a boolean "shared" flag:
+     - shared=true  -> visible to every guest (the calendar board, guess
+       entries, reveal state). Backed by the /api/storage serverless
+       function, which persists to Vercel KV.
+     - shared=false -> private to this browser only ("which guess is
+       mine"). Backed by localStorage, no network round trip needed.
+   ======================================================================= */
+window.storage = (function(){
+  const LOCAL_PREFIX = 'shower-local:';
+
+  async function api(method, params, body){
+    const qs = new URLSearchParams(params).toString();
+    const opts = { method };
+    if(body !== undefined){
+      opts.headers = {'Content-Type':'application/json'};
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch('/api/storage?'+qs, opts);
+    if(!res.ok) throw new Error('storage request failed: '+res.status);
+    return res.json();
+  }
+
+  return {
+    async get(key, shared){
+      if(!shared){
+        return { value: localStorage.getItem(LOCAL_PREFIX+key) };
+      }
+      return api('GET', {op:'get', key});
+    },
+    async set(key, value, shared){
+      if(!shared){
+        localStorage.setItem(LOCAL_PREFIX+key, value);
+        return { ok:true };
+      }
+      return api('POST', {}, {key, value});
+    },
+    async list(prefix, shared){
+      if(!shared){
+        const keys=[];
+        for(let i=0;i<localStorage.length;i++){
+          const k=localStorage.key(i);
+          if(k && k.indexOf(LOCAL_PREFIX+prefix)===0) keys.push(k.slice(LOCAL_PREFIX.length));
+        }
+        return { keys };
+      }
+      return api('GET', {op:'list', prefix});
+    },
+    async delete(key, shared){
+      if(!shared){
+        localStorage.removeItem(LOCAL_PREFIX+key);
+        return { ok:true };
+      }
+      return api('DELETE', {key});
+    }
+  };
+})();
+
+/* =======================================================================
+   SETTINGS you can change
+   ======================================================================= */
+const HOST_PASSCODE = "EMISHAW2026";   // change this to whatever you want
+const DEFAULT_DUE   = "2026-10-24";
+const K_REVEAL      = "shower:reveal";  // shared
+const K_ENTRY       = "shower:entry:";  // shared, one key per guest
+const K_MINE        = "shower:mine";    // private to each phone
+
+/* =======================================================================
+   State
+   ======================================================================= */
+let entries = [];
+let reveal  = { revealed:false, dueDate:DEFAULT_DUE, dueTime:"00:00", actual:null };
+let myId    = null;
+let selectedKey = null;
+let cdTimer = null;
+
+/* =======================================================================
+   Helpers
+   ======================================================================= */
+const $ = id => document.getElementById(id);
+const show = (el,on=true) => el.classList.toggle('hidden',!on);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg){
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2600);
+}
+function todayKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function prettyDate(key){
+  if(!key) return '';
+  const [y,m,d]=key.split('-').map(Number);
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return months[m-1]+' '+d;
+}
+function shortDate(key){
+  if(!key) return '';
+  const [,m,d]=key.split('-').map(Number);
+  const ab=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return ab[m-1]+' '+d;
+}
+function pretty12(t){
+  if(!t) return '';
+  let [h,m]=t.split(':').map(Number);
+  const ap = h>=12 ? 'pm':'am';
+  h = h%12; if(h===0) h=12;
+  return h+':'+String(m).padStart(2,'0')+' '+ap;
+}
+function daysApart(a,b){
+  return Math.abs((new Date(a+'T00:00:00') - new Date(b+'T00:00:00'))/86400000);
+}
+
+/* =======================================================================
+   Storage
+   ======================================================================= */
+async function loadReveal(){
+  try{
+    const r = await window.storage.get(K_REVEAL,true);
+    if(r && r.value) reveal = Object.assign(reveal, JSON.parse(r.value));
+  }catch(e){ /* not set yet, defaults stand */ }
+}
+async function saveReveal(){
+  try{ await window.storage.set(K_REVEAL, JSON.stringify(reveal), true); }
+  catch(e){ toast('Could not save. Check your connection.'); }
+}
+async function loadEntries(){
+  try{
+    const res = await window.storage.list(K_ENTRY,true);
+    const keys = (res && res.keys) ? res.keys : [];
+    const out=[];
+    for(let i=0;i<keys.length;i+=6){
+      const chunk = keys.slice(i,i+6);
+      const got = await Promise.all(chunk.map(async k=>{
+        try{ const r=await window.storage.get(k,true); return r&&r.value?JSON.parse(r.value):null; }
+        catch(e){ return null; }
+      }));
+      got.forEach(g=>{ if(g) out.push(g); });
+    }
+    out.sort((a,b)=> (a.date===b.date) ? (a.ts||0)-(b.ts||0) : a.date.localeCompare(b.date));
+    entries = out;
+  }catch(e){ entries = entries || []; }
+}
+async function saveEntry(entry){
+  await window.storage.set(K_ENTRY+entry.id, JSON.stringify(entry), true);
+}
+
+/* =======================================================================
+   Boot
+   ======================================================================= */
+async function boot(){
+  await loadReveal();
+  await loadEntries();
+  try{
+    const m = await window.storage.get(K_MINE,false);
+    if(m && m.value) myId = m.value;
+  }catch(e){ myId=null; }
+
+  const mine = entries.find(e=>e.id===myId);
+  show($('screen-load'),false);
+  if(mine){ openBoard(); } else { show($('screen-guess'),true); }
+}
+
+/* =======================================================================
+   Submit a guess
+   ======================================================================= */
+$('submit-guess').addEventListener('click', async ()=>{
+  const name  = $('f-name').value.trim();
+  const date  = $('f-date').value;
+  const time  = $('f-time').value;
+  const place = $('f-place').value.trim();
+  const withWho = $('f-with').value.trim();
+  const err = $('guess-err');
+
+  const missing = [];
+  if(!name) missing.push('your name');
+  if(!date) missing.push('a date');
+  if(!time) missing.push('a time');
+  if(!place) missing.push('a location');
+  if(!withWho) missing.push('who she is with');
+  if(missing.length){
+    err.textContent = 'Still need '+missing.join(', ')+'.';
+    show(err,true); return;
+  }
+  await loadEntries();
+  if(entries.some(e=>e.name.toLowerCase()===name.toLowerCase())){
+    err.textContent = 'Somebody already entered under that name. Add your last initial and try again.';
+    show(err,true); return;
+  }
+  show(err,false);
+
+  const entry = {
+    id: 'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+    name, date, time, place, withWho,
+    nameGuess:'', email:'', ts: Date.now()
+  };
+  const btn = $('submit-guess');
+  btn.textContent='Saving...'; btn.disabled=true;
+  try{
+    await saveEntry(entry);
+    await window.storage.set(K_MINE, entry.id, false);
+    myId = entry.id;
+    entries.push(entry);
+    show($('screen-guess'),false);
+    show($('bonus'),true);
+    setTimeout(()=>$('f-namesguess').focus(),200);
+  }catch(e){
+    err.textContent='That did not save. Try once more.'; show(err,true);
+  }
+  btn.textContent='Lock in my guess'; btn.disabled=false;
+});
+
+/* ---------- bonus round ---------- */
+async function closeBonus(pick){
+  const mine = entries.find(e=>e.id===myId);
+  if(mine && pick){
+    mine.nameGuess = pick;
+    try{ await saveEntry(mine); }catch(e){}
+  }
+  show($('bonus'),false);
+  openBoard();
+  if(pick) toast('Pick saved. Good luck.');
+}
+$('save-namesguess').addEventListener('click', ()=> closeBonus($('f-namesguess').value.trim()));
+$('skip-bonus').addEventListener('click', ()=> closeBonus(''));
+
+/* =======================================================================
+   Board
+   ======================================================================= */
+async function openBoard(){
+  show($('screen-guess'),false);
+  show($('screen-admin'),false);
+  show($('screen-board'),true);
+  await refreshBoard();
+}
+async function refreshBoard(){
+  await loadReveal();
+  await loadEntries();
+  renderPlacard();
+  renderCalendar();
+  renderList();
+  renderTodayBanner();
+  renderEmailCard();
+}
+$('refresh').addEventListener('click', async ()=>{ await refreshBoard(); toast('Board updated.'); });
+
+function renderPlacard(){
+  const dn = $('daynum'), note = $('placard-note'), cd = $('countdown');
+  const monthEl = document.querySelector('.month');
+  if(reveal.revealed){
+    const [y,m,d] = reveal.dueDate.split('-').map(Number);
+    const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    monthEl.textContent = months[m-1];
+    dn.textContent = d;
+    note.textContent = 'The countdown is running.';
+    show(cd,true);
+    show($('lg-due'),true);
+    startCountdown();
+  }else{
+    monthEl.textContent = 'October';
+    dn.innerHTML = '<span class="blank"></span>';
+    note.textContent = 'The number stays hidden until the reveal.';
+    show(cd,false);
+    if(cdTimer) clearInterval(cdTimer);
+  }
+}
+function startCountdown(){
+  if(cdTimer) clearInterval(cdTimer);
+  const target = new Date(reveal.dueDate+'T'+(reveal.dueTime||'00:00')+':00');
+  const tickIt = ()=>{
+    let diff = target - new Date();
+    if(diff<=0){
+      $('cd-d').textContent='0';$('cd-h').textContent='0';$('cd-m').textContent='0';$('cd-s').textContent='0';
+      $('placard-note').textContent='The day is here.';
+      clearInterval(cdTimer); return;
+    }
+    const d=Math.floor(diff/86400000); diff-=d*86400000;
+    const h=Math.floor(diff/3600000); diff-=h*3600000;
+    const m=Math.floor(diff/60000); diff-=m*60000;
+    const s=Math.floor(diff/1000);
+    $('cd-d').textContent=d;$('cd-h').textContent=h;$('cd-m').textContent=m;$('cd-s').textContent=s;
+  };
+  tickIt(); cdTimer=setInterval(tickIt,1000);
+}
+
+function byDate(){
+  const map={};
+  entries.forEach(e=>{ (map[e.date]=map[e.date]||[]).push(e); });
+  return map;
+}
+function renderCalendar(){
+  const map = byDate();
+  const grid = $('cal-grid'); grid.innerHTML='';
+  const y=2026, m=10;                     // October 2026
+  const first = new Date(y, m-1, 1).getDay();
+  const days  = new Date(y, m, 0).getDate();
+  const tk = todayKey();
+
+  for(let i=0;i<first;i++){
+    const c=document.createElement('div'); c.className='cell empty'; grid.appendChild(c);
+  }
+  for(let d=1; d<=days; d++){
+    const key = y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const list = map[key]||[];
+    const c=document.createElement('div');
+    c.className='cell'+(list.length?' has':'')+(key===tk?' today':'')
+      +((reveal.revealed && key===reveal.dueDate)?' due':'')
+      +(key===selectedKey?' sel':'');
+    c.innerHTML = d + (list.length? '<span class="pips">'+list.slice(0,3).map(()=>'<i></i>').join('')+'</span>' : '');
+    if(list.length){
+      c.setAttribute('role','button'); c.setAttribute('tabindex','0');
+      c.addEventListener('click',()=>{ selectedKey = (selectedKey===key?null:key); renderCalendar(); showDetail(); });
+      c.addEventListener('keydown',ev=>{ if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();c.click();} });
+    }
+    grid.appendChild(c);
+  }
+  showDetail();
+
+  // September and November spillover
+  const outside = Object.keys(map).filter(k=>!k.startsWith('2026-10')).sort();
+  const sp = $('spill');
+  if(outside.length){
+    sp.innerHTML = '<b>Outside October</b><br>' + outside.map(k=>
+      shortDate(k)+': '+map[k].map(e=>esc(e.name)).join(', ')).join('<br>');
+    show(sp,true);
+  } else show(sp,false);
+}
+function showDetail(){
+  const det=$('cal-detail');
+  if(!selectedKey){ show(det,false); return; }
+  const list=byDate()[selectedKey]||[];
+  det.innerHTML = '<b>'+prettyDate(selectedKey)+'</b>' + list.map(e=>
+    esc(e.name)+' &middot; '+pretty12(e.time)+' &middot; '+esc(e.place)+' with '+esc(e.withWho)
+  ).join('<br>');
+  show(det,true);
+}
+function winnerId(){
+  if(!reveal.actual || !entries.length) return null;
+  let best=null,bd=Infinity;
+  entries.forEach(e=>{ const d=daysApart(e.date,reveal.actual); if(d<bd){bd=d;best=e.id;} });
+  return best;
+}
+function renderList(){
+  const wid = winnerId();
+  $('count-line').textContent = entries.length===1 ? '1 guess in so far.' : entries.length+' guesses in so far.';
+  $('guess-list').innerHTML = entries.map(e=>`
+    <div class="guess">
+      <div class="who">
+        <b>${esc(e.name)}${e.id===myId?'<span class="mine">You</span>':''}${e.id===wid?'<span class="crown">Winner</span>':''}</b>
+        <em>${shortDate(e.date)}</em>
+      </div>
+      <dl>
+        <dt>Time</dt><dd>${esc(pretty12(e.time))}</dd>
+        <dt>Where</dt><dd>${esc(e.place)}</dd>
+        <dt>With</dt><dd>${esc(e.withWho)}</dd>
+        ${e.nameGuess?`<dt>Name</dt><dd>${esc(e.nameGuess)}</dd>`:''}
+      </dl>
+    </div>`).join('') || '<p class="sub">Nobody has guessed yet. You are first.</p>';
+}
+function renderTodayBanner(){
+  const tk = todayKey();
+  const list = (byDate()[tk]||[]);
+  const b=$('today-banner');
+  if(!list.length){ show(b,false); return; }
+  const names = list.map(e=>e.name);
+  const joined = names.length===1 ? names[0]+"'s guess is today"
+    : names.slice(0,-1).join(', ')+' and '+names.slice(-1)+' guessed today';
+  $('today-text').textContent = joined + '. Eyes on the phone.';
+  show(b,true);
+}
+function renderEmailCard(){
+  const mine = entries.find(e=>e.id===myId);
+  if(mine && mine.email){
+    $('email-card').innerHTML = '<h2>Reminder</h2><p class="sub">You are on the list. We will nudge you at '+esc(mine.email)+' when your day comes around.</p>';
+  }
+}
+$('save-email').addEventListener('click', async ()=>{
+  const v=$('f-email').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ toast('That email does not look right.'); return; }
+  const mine = entries.find(e=>e.id===myId);
+  if(!mine){ toast('Submit a guess first.'); return; }
+  mine.email=v;
+  try{ await saveEntry(mine); renderEmailCard(); toast('You are on the list.'); }
+  catch(e){ toast('Could not save that. Try again.'); }
+});
+
+/* =======================================================================
+   Admin
+   ======================================================================= */
+let tapCount=0, tapTimer=null;
+$('secret').addEventListener('click', ()=>{
+  tapCount++;
+  clearTimeout(tapTimer); tapTimer=setTimeout(()=>tapCount=0,1200);
+  if(tapCount>=5){ tapCount=0; openAdmin(); }
+});
+$('secret').addEventListener('keydown',e=>{ if(e.key==='Enter') openAdmin(); });
+
+function openAdmin(){
+  show($('screen-guess'),false); show($('screen-board'),false); show($('screen-load'),false);
+  show($('screen-admin'),true);
+  show($('admin-gate'),true); show($('admin-panel'),false);
+  $('f-pass').value=''; $('f-pass').focus();
+}
+$('admin-back').addEventListener('click', ()=>{ show($('screen-admin'),false); myId?openBoard():show($('screen-guess'),true); });
+$('admin-exit').addEventListener('click', ()=>{ show($('screen-admin'),false); myId?openBoard():show($('screen-guess'),true); });
+
+$('do-login').addEventListener('click', async ()=>{
+  if($('f-pass').value.trim() !== HOST_PASSCODE){ show($('pass-err'),true); return; }
+  show($('pass-err'),false);
+  show($('admin-gate'),false); show($('admin-panel'),true);
+  await renderAdmin();
+});
+$('f-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('do-login').click(); });
+
+async function renderAdmin(){
+  await loadReveal(); await loadEntries();
+  $('s-entries').textContent = entries.length;
+  $('s-emails').textContent  = entries.filter(e=>e.email).length;
+  $('s-names').textContent   = entries.filter(e=>e.nameGuess).length;
+  $('f-realdate').value = reveal.dueDate || DEFAULT_DUE;
+  $('f-realtime').value = reveal.dueTime || '00:00';
+  if(reveal.actual) $('f-actual').value = reveal.actual;
+  show($('do-reveal'), !reveal.revealed);
+  show($('do-hide'), reveal.revealed);
+
+  $('email-dump').value = entries.filter(e=>e.email)
+    .map(e=>e.name+' ('+shortDate(e.date)+'): '+e.email).join('\n') || 'No emails yet.';
+
+  $('name-dump').innerHTML = entries.filter(e=>e.nameGuess)
+    .map(e=>'<div><span>'+esc(e.name)+'</span><b>'+esc(e.nameGuess)+'</b></div>').join('')
+    || '<div><span>No name picks yet.</span></div>';
+}
+$('do-reveal').addEventListener('click', async ()=>{
+  reveal.revealed=true;
+  reveal.dueDate=$('f-realdate').value||DEFAULT_DUE;
+  reveal.dueTime=$('f-realtime').value||'00:00';
+  await saveReveal(); await renderAdmin(); toast('Date revealed. Countdown is live.');
+});
+$('do-hide').addEventListener('click', async ()=>{
+  reveal.revealed=false; await saveReveal(); await renderAdmin(); toast('Hidden again.');
+});
+$('do-actual').addEventListener('click', async ()=>{
+  const v=$('f-actual').value;
+  if(!v){ toast('Pick the birth date first.'); return; }
+  reveal.actual=v; reveal.revealed=true; reveal.dueDate=v;
+  await saveReveal(); await renderAdmin(); toast('Winner crowned.');
+});
+$('copy-emails').addEventListener('click', ()=>{
+  const t=$('email-dump'); t.select(); t.setSelectionRange(0,99999);
+  try{ document.execCommand('copy'); toast('Copied.'); }catch(e){ toast('Select and copy manually.'); }
+});
+$('do-reset').addEventListener('click', async ()=>{
+  if(!confirm('This deletes every guess from every guest. There is no undo. Continue?')) return;
+  try{
+    const res = await window.storage.list(K_ENTRY,true);
+    const keys = (res && res.keys)?res.keys:[];
+    for(const k of keys){ try{ await window.storage.delete(k,true); }catch(e){} }
+    reveal={revealed:false,dueDate:DEFAULT_DUE,dueTime:'00:00',actual:null};
+    await saveReveal();
+    try{ await window.storage.delete(K_MINE,false); }catch(e){}
+    myId=null; entries=[];
+    await renderAdmin(); toast('Board cleared.');
+  }catch(e){ toast('Could not clear everything.'); }
+});
+
+boot();
+</script>
+</body>
+</html>
