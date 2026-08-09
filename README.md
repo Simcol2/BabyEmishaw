@@ -182,13 +182,26 @@ via a Google Apps Script Web App:
   the Apps Script to a new URL (redeploying an *existing* deployment as a
   new version keeps the same URL; only creating a brand new deployment
   changes it).
-- The browser can't read the Apps Script response (it doesn't return CORS
-  headers), so submission is fire-and-forget from the page's point of
-  view — it shows "Answer submitted" once the request goes out, not once
-  Google confirms the row was written. If answers aren't showing up in the
-  Sheet, open the `/exec` URL directly in a browser (a GET request) — it
-  should say "Baby Emishaw trivia backend is running." If it doesn't, the
-  deployment isn't live yet (see the "New version" step above).
+- Submissions go out as a `GET` request with the answer in the query
+  string, not a `POST`. Apps Script's `/exec` endpoint redirects every
+  request internally, and that redirect can silently downgrade a POST into
+  a GET — which would mean a submission quietly hits `doGet` (a no-op)
+  instead of `doPost` (the one that writes the row), with no error
+  anywhere to show it. Sending GET from the start sidesteps that
+  entirely, so `Code.gs` only defines `doGet`, handling both the
+  plain health-check visit and real submissions (based on whether an
+  `answer` query param is present).
+- The browser can't read the Apps Script response either way (it doesn't
+  return CORS headers), so submission is fire-and-forget from the page's
+  point of view — it shows "Answer submitted" once the request goes out,
+  not once Google confirms the row was written. If answers aren't showing
+  up in the Sheet: open the `/exec` URL directly in a browser with no query
+  string — it should say "Baby Emishaw trivia backend is running." (if not,
+  the deployment isn't live yet, see the "New version" step above). An
+  "Answers" tab appears in the spreadsheet automatically the first time a
+  submission is actually logged — if it never appears, check the Apps
+  Script editor's Executions log (clock icon, left sidebar) for the actual
+  error.
 - The 7 questions, the poem, and each answer key live in the
   `TRIVIA_QUESTIONS` / `TRIVIA_POEM` constants in `index.html` — edit
   there to change the game content.

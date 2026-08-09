@@ -1260,17 +1260,21 @@ $('trivia-submit-answer').addEventListener('click', async ()=>{
   const btn = $('trivia-submit-answer');
   btn.textContent='Sending...'; btn.disabled=true;
 
-  // Fire-and-forget to the Google Sheet. Apps Script web apps don't return
-  // CORS headers we could read anyway, so mode:'no-cors' + a text/plain
-  // body (to dodge the preflight the JSON content-type would trigger) is
-  // the standard way to post to one from a browser - we just can't read
-  // the response, only know the request went out.
-  fetch(TRIVIA_SHEET_URL, {
-    method:'POST',
-    mode:'no-cors',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify({ name: triviaPlayerName, question: cur, questionTitle: q.title, answer, ts: Date.now() })
-  }).catch(()=>{});
+  // Fire-and-forget to the Google Sheet, as a GET with the data in the
+  // query string rather than a POST. Apps Script's /exec endpoint
+  // internally redirects every request, and that redirect can silently
+  // downgrade a POST into a GET - meaning the write could quietly land on
+  // doGet (a no-op) instead of doPost, with no error to show it. GET from
+  // the start sidesteps that, and never triggers a CORS preflight either.
+  // We still can't read the response (no CORS headers to allow it), only
+  // that the request went out.
+  const sheetUrl = new URL(TRIVIA_SHEET_URL);
+  sheetUrl.searchParams.set('name', triviaPlayerName || '');
+  sheetUrl.searchParams.set('question', String(cur));
+  sheetUrl.searchParams.set('questionTitle', q.title);
+  sheetUrl.searchParams.set('answer', answer);
+  sheetUrl.searchParams.set('ts', String(Date.now()));
+  fetch(sheetUrl.toString(), { method:'GET', mode:'no-cors' }).catch(()=>{});
 
   try{
     await window.storage.set(K_TRIVIA_ANSWERED+cur+':'+triviaPlayerId(),
