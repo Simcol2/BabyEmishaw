@@ -1,7 +1,10 @@
 {
   "rewrites": [
     { "source": "/admin", "destination": "/index.html" },
-    { "source": "/BabyEmishaw", "destination": "/index.html" }
+    { "source": "/BabyEmishaw", "destination": "/index.html" },
+    { "source": "/babyemishaw", "destination": "/index.html" },
+    { "source": "/Babyemishaw", "destination": "/index.html" },
+    { "source": "/BABYEMISHAW", "destination": "/index.html" }
   ],
   "crons": [
     { "path": "/api/cron/daily-reminder", "schedule": "0 13 * * *" }
