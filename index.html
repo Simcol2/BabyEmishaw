@@ -82,6 +82,7 @@ input[type=text],input[type=date],input[type=time],input[type=email],input[type=
 textarea{min-height:88px;resize:vertical;line-height:1.4}
 input:focus,textarea:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(232,21,107,.16)}
 button{font-family:var(--display);cursor:pointer;border:none;font-size:15px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+a.btn{font-family:var(--display);cursor:pointer;font-size:15px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;text-decoration:none;text-align:center}
 .btn{
   display:block;width:100%;margin-top:24px;padding:16px;color:#fff;
   background:var(--pink);border-radius:2px;box-shadow:0 6px 0 var(--pink-deep);
@@ -281,12 +282,14 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
         <span><i style="background:#fff;border:2px solid var(--teal)"></i>Today</span>
         <span id="lg-due" class="hidden"><i style="background:var(--gold)"></i>Due date</span>
       </div>
+      <a href="/game" class="btn gold">Play the Game</a>
     </div>
 
     <div class="card">
       <h2>Everyone's Guesses</h2>
       <p class="sub"><span id="count-line"></span></p>
       <div id="guess-list"></div>
+      <button class="btn gold" id="take-a-guess-btn">Take a Guess</button>
       <button class="btn ghost" id="refresh">Refresh the board</button>
     </div>
 
@@ -356,6 +359,7 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
       <p class="sub hidden" id="trivia-admin-answer-key" style="color:var(--gold);font-weight:600"></p>
       <button class="btn gold" id="trivia-admin-advance">Start the Game</button>
       <button class="btn ghost" id="trivia-admin-reset">Reset Game</button>
+      <div id="trivia-admin-answers"></div>
 
       <div class="rule"></div>
       <button class="btn ghost" id="admin-exit">Back to the board</button>
@@ -419,7 +423,7 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
       <input type="text" id="f-trivia-name" autocomplete="name" placeholder="First and last">
       <div id="trivia-name-err" class="err hidden"></div>
       <button class="btn" id="trivia-join">Let's Play</button>
-      <button class="btn ghost" id="trivia-name-back">Back to the board</button>
+      <a href="/" class="btn ghost">Back to the board</a>
     </div>
   </section>
 
@@ -458,13 +462,13 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
         <p class="sub">That's all seven! Thanks for playing — Britt will love reading these.</p>
       </div>
     </div>
-    <button class="btn ghost" id="trivia-exit">Back to the board</button>
+    <a href="/" class="btn ghost">Back to the board</a>
   </section>
 
   <footer>
     Made with love for Baby Emishaw <span class="dot" id="secret" role="button" tabindex="0" aria-label="Host access">✦</span>
     <div style="margin-top:14px">
-      <button class="btn gold small" id="play-game-btn">Play the Game</button>
+      <a href="/game" class="btn gold small">Play the Game</a>
     </div>
   </footer>
 </div>
@@ -652,6 +656,7 @@ async function boot(){
   const path = window.location.pathname.replace(/\/+$/,'') || '/';
   if(path.toLowerCase() === '/admin'){ openAdmin(); return; }
   if(path.toLowerCase() === '/babyemishaw'){ openBritt(); return; }
+  if(path.toLowerCase() === '/game'){ await openTriviaEntry(); return; }
 
   const mine = entries.find(e=>e.id===myId);
   if(mine){ openBoard(); } else { show($('screen-guess'),true); }
@@ -907,14 +912,22 @@ function openAdmin(){
   show($('admin-gate'),true); show($('admin-panel'),false);
   $('f-pass').value=''; $('f-pass').focus();
 }
-$('admin-back').addEventListener('click', ()=>{ show($('screen-admin'),false); myId?openBoard():show($('screen-guess'),true); });
-$('admin-exit').addEventListener('click', ()=>{ show($('screen-admin'),false); myId?openBoard():show($('screen-guess'),true); });
+let adminTriviaPollTimer = null;
+function stopAdminTriviaPoll(){
+  if(adminTriviaPollTimer){ clearInterval(adminTriviaPollTimer); adminTriviaPollTimer=null; }
+}
+$('admin-back').addEventListener('click', ()=>{ show($('screen-admin'),false); stopAdminTriviaPoll(); myId?openBoard():show($('screen-guess'),true); });
+$('admin-exit').addEventListener('click', ()=>{ show($('screen-admin'),false); stopAdminTriviaPoll(); myId?openBoard():show($('screen-guess'),true); });
 
 $('do-login').addEventListener('click', async ()=>{
   if($('f-pass').value.trim() !== HOST_PASSCODE){ show($('pass-err'),true); return; }
   show($('pass-err'),false);
   show($('admin-gate'),false); show($('admin-panel'),true);
   await renderAdmin();
+  // Keeps answer counts/text live while the host has the panel open during
+  // the game, without them needing to click anything to refresh it.
+  stopAdminTriviaPoll();
+  adminTriviaPollTimer = setInterval(renderTriviaAdmin, 5000);
 });
 $('f-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('do-login').click(); });
 
@@ -1130,19 +1143,26 @@ function showTriviaPanel(which){
   show($('trivia-done'), which==='done');
 }
 
-$('play-game-btn').addEventListener('click', async ()=>{
-  show($('screen-guess'),false); show($('screen-board'),false); show($('screen-admin'),false); show($('screen-britt'),false);
+// /game is a real, separate page (see boot()'s pathname check) rather than
+// a same-page show/hide, specifically so the browser's back button leads
+// somewhere sane (back to "/") instead of leaving the site or losing state
+// with no history entry to land on.
+async function openTriviaEntry(){
+  show($('screen-guess'),false); show($('screen-board'),false); show($('screen-admin'),false); show($('screen-britt'),false); show($('screen-load'),false);
   let m = null;
   try{ m = await window.storage.get(K_TRIVIA_ME, false); }catch(e){}
   if(m && m.value){
+    // Returning player: skip straight past name entry, but the poem always
+    // shows regardless of whether the game already has questions live -
+    // only "I'm Ready" reveals the current question.
     triviaPlayerName = m.value;
-    await enterTriviaGame();
+    show($('screen-trivia-poem'),true);
+    $('trivia-poem-text').textContent = TRIVIA_POEM;
   } else {
     show($('screen-trivia-name'),true);
     $('f-trivia-name').focus();
   }
-});
-$('trivia-name-back').addEventListener('click', ()=>{ show($('screen-trivia-name'),false); myId?openBoard():show($('screen-guess'),true); });
+}
 
 $('trivia-join').addEventListener('click', async ()=>{
   const name = $('f-trivia-name').value.trim();
@@ -1167,12 +1187,10 @@ async function enterTriviaGame(){
   await refreshTriviaGame();
   if(triviaPollTimer) clearInterval(triviaPollTimer);
   triviaPollTimer = setInterval(refreshTriviaGame, 4000);
+  // No manual poll cleanup needed on exit - "Back to the board" is a real
+  // link to "/" now, so leaving discards this whole page (and its
+  // interval) the same way any normal navigation would.
 }
-$('trivia-exit').addEventListener('click', ()=>{
-  show($('screen-trivia-game'),false);
-  if(triviaPollTimer){ clearInterval(triviaPollTimer); triviaPollTimer=null; }
-  myId?openBoard():show($('screen-guess'),true);
-});
 
 async function refreshTriviaGame(){
   await loadTriviaState();
@@ -1234,7 +1252,8 @@ $('trivia-submit-answer').addEventListener('click', async ()=>{
   }).catch(()=>{});
 
   try{
-    await window.storage.set(K_TRIVIA_ANSWERED+cur+':'+triviaPlayerId(), '1', true);
+    await window.storage.set(K_TRIVIA_ANSWERED+cur+':'+triviaPlayerId(),
+      JSON.stringify({ name: triviaPlayerName, answer, ts: Date.now() }), true);
   }catch(e){ /* still show as submitted client-side */ }
 
   showTriviaPanel('answered');
@@ -1242,6 +1261,22 @@ $('trivia-submit-answer').addEventListener('click', async ()=>{
 });
 
 /* ---------- admin controls ---------- */
+async function loadTriviaAnswers(q){
+  const out = [];
+  try{
+    const res = await window.storage.list(K_TRIVIA_ANSWERED+q+':', true);
+    const keys = (res && res.keys) ? res.keys : [];
+    for(const k of keys){
+      try{
+        const r = await window.storage.get(k, true);
+        if(r && r.value) out.push(JSON.parse(r.value));
+      }catch(e){ /* skip corrupt entry */ }
+    }
+  }catch(e){}
+  out.sort((a,b)=>(a.ts||0)-(b.ts||0));
+  return out;
+}
+
 async function renderTriviaAdmin(){
   await loadTriviaState();
   const cur = triviaState.current || 0;
@@ -1258,18 +1293,30 @@ async function renderTriviaAdmin(){
     btnLabel = null;
   }
 
-  if(cur>=1 && cur<=TRIVIA_QUESTIONS.length){
-    let answered = 0;
-    try{
-      const res = await window.storage.list(K_TRIVIA_ANSWERED+cur+':', true);
-      answered = (res && res.keys) ? res.keys.length : 0;
-    }catch(e){}
-    statusText += ' '+answered+' answer'+(answered===1?'':'s')+' so far.';
-    $('trivia-admin-answer-key').textContent = 'Answer: '+TRIVIA_QUESTIONS[cur-1].answer;
-    show($('trivia-admin-answer-key'),true);
+  const upto = Math.min(cur, TRIVIA_QUESTIONS.length);
+  let answersHtml = '';
+  if(upto >= 1){
+    const currentAnswers = await loadTriviaAnswers(upto);
+    if(cur<=TRIVIA_QUESTIONS.length){
+      statusText += ' '+currentAnswers.length+' answer'+(currentAnswers.length===1?'':'s')+' so far.';
+      $('trivia-admin-answer-key').textContent = 'Answer: '+TRIVIA_QUESTIONS[cur-1].answer;
+      show($('trivia-admin-answer-key'),true);
+    } else {
+      show($('trivia-admin-answer-key'),false);
+    }
+    // Every released question gets its own "who said what" list, so the
+    // host can see it all here without switching over to the Google Sheet.
+    for(let q=upto; q>=1; q--){
+      const answers = (q===upto) ? currentAnswers : await loadTriviaAnswers(q);
+      answersHtml += '<div class="rule"></div><h2>Q'+q+'. '+esc(TRIVIA_QUESTIONS[q-1].title)+' ('+answers.length+')</h2>';
+      answersHtml += '<div class="notelist">' + (answers.length
+        ? answers.map(a=>'<div><b>'+esc(a.name)+'</b><p>'+esc(a.answer)+'</p></div>').join('')
+        : '<div><p>No answers yet.</p></div>') + '</div>';
+    }
   } else {
     show($('trivia-admin-answer-key'),false);
   }
+  $('trivia-admin-answers').innerHTML = answersHtml;
 
   $('trivia-admin-status').textContent = statusText;
   show($('trivia-admin-advance'), !!btnLabel);
@@ -1289,7 +1336,7 @@ $('trivia-admin-reset').addEventListener('click', async ()=>{
   toast('Game reset.');
 });
 
-(function setDefaultGuessDate(){
+function setDefaultGuessDate(){
   // Default to today's date rather than a fixed date, so the form itself
   // never hints at which day is the real due date. Clamped to the
   // picker's allowed range in case "today" falls outside it.
@@ -1298,7 +1345,22 @@ $('trivia-admin-reset').addEventListener('click', async ()=>{
   if(el.min && d < el.min) d = el.min;
   if(el.max && d > el.max) d = el.max;
   el.value = d;
-})();
+}
+setDefaultGuessDate();
+
+$('take-a-guess-btn').addEventListener('click', ()=>{
+  // Lets a second (or third...) person sharing this phone submit their
+  // own guess - without this, myId being set from the first person's
+  // guess would otherwise strand every later visitor on the board.
+  // Clear the form so nobody sees the previous guesser's answers.
+  $('f-name').value=''; $('f-place').value=''; $('f-with').value=''; $('f-note').value='';
+  $('f-time').value='03:00';
+  setDefaultGuessDate();
+  show($('guess-err'),false);
+  show($('screen-board'),false);
+  show($('screen-guess'),true);
+  $('f-name').focus();
+});
 
 boot();
 </script>

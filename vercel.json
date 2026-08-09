@@ -1,6 +1,8 @@
 {
   "rewrites": [
     { "source": "/admin", "destination": "/index.html" },
+    { "source": "/game", "destination": "/index.html" },
+    { "source": "/Game", "destination": "/index.html" },
     { "source": "/BabyEmishaw", "destination": "/index.html" },
     { "source": "/babyemishaw", "destination": "/index.html" },
     { "source": "/Babyemishaw", "destination": "/index.html" },
