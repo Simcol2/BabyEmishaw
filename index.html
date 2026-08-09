@@ -347,6 +347,13 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
       <p class="sub" style="margin:10px 0 0">Notes guests leave for Britt are private to her page and don't show up here.</p>
 
       <div class="rule"></div>
+      <h2>Trivia Game</h2>
+      <p class="sub" id="trivia-admin-status">Not started yet.</p>
+      <p class="sub hidden" id="trivia-admin-answer-key" style="color:var(--gold);font-weight:600"></p>
+      <button class="btn gold" id="trivia-admin-advance">Start the Game</button>
+      <button class="btn ghost" id="trivia-admin-reset">Reset Game</button>
+
+      <div class="rule"></div>
       <button class="btn ghost" id="admin-exit">Back to the board</button>
       <button class="btn ghost danger" id="do-reset">Clear every entry</button>
     </div>
@@ -399,8 +406,62 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
     </div>
   </section>
 
+  <!-- ============ TRIVIA: NAME ENTRY ============ -->
+  <section id="screen-trivia-name" class="hidden">
+    <div class="card">
+      <h2>How Well Do You Know Britt?</h2>
+      <p class="sub">A little game for the shower. Enter your name to play.</p>
+      <label for="f-trivia-name">Your name</label>
+      <input type="text" id="f-trivia-name" autocomplete="name" placeholder="First and last">
+      <div id="trivia-name-err" class="err hidden"></div>
+      <button class="btn" id="trivia-join">Let's Play</button>
+      <button class="btn ghost" id="trivia-name-back">Back to the board</button>
+    </div>
+  </section>
+
+  <!-- ============ TRIVIA: POEM INTRO ============ -->
+  <section id="screen-trivia-poem" class="hidden">
+    <div class="card placard">
+      <span class="kicker">Baby Britt Trivia</span>
+      <p id="trivia-poem-text" style="font-size:16px;line-height:1.9;color:var(--ink);margin:16px 0 0;white-space:pre-line"></p>
+      <button class="btn gold" id="trivia-ready" style="margin-top:22px">I'm Ready</button>
+    </div>
+  </section>
+
+  <!-- ============ TRIVIA: LIVE GAME ============ -->
+  <section id="screen-trivia-game" class="hidden">
+    <div class="card">
+      <h2 id="trivia-q-kicker">Waiting for the host</h2>
+
+      <div id="trivia-waiting">
+        <p class="sub">Hang tight — the host will start the game shortly. This screen will update on its own.</p>
+      </div>
+
+      <div class="hidden" id="trivia-active">
+        <p class="sub" id="trivia-q-number"></p>
+        <p id="trivia-q-title" style="font-family:var(--num);font-style:italic;font-size:21px;color:var(--pink-deep);margin:4px 0 12px"></p>
+        <p id="trivia-q-text" style="white-space:pre-line;line-height:1.7;font-size:15px;color:var(--ink)"></p>
+        <label for="f-trivia-answer" style="margin-top:18px">Your answer</label>
+        <textarea id="f-trivia-answer" placeholder="Type your guess..."></textarea>
+        <button class="btn gold" id="trivia-submit-answer">Submit Answer</button>
+      </div>
+
+      <div class="hidden" id="trivia-answered">
+        <p class="sub">Answer submitted! Waiting for the next question — this screen will update on its own.</p>
+      </div>
+
+      <div class="hidden" id="trivia-done">
+        <p class="sub">That's all seven! Thanks for playing — Britt will love reading these.</p>
+      </div>
+    </div>
+    <button class="btn ghost" id="trivia-exit">Back to the board</button>
+  </section>
+
   <footer>
     Made with love for Baby Emishaw <span class="dot" id="secret" role="button" tabindex="0" aria-label="Host access">✦</span>
+    <div style="margin-top:14px">
+      <button class="btn gold small" id="play-game-btn">Play the Game</button>
+    </div>
   </footer>
 </div>
 
@@ -863,6 +924,8 @@ async function renderAdmin(){
   $('name-dump').innerHTML = entries.filter(e=>e.nameGuess)
     .map(e=>'<div><span>'+esc(e.name)+'</span><b>'+esc(e.nameGuess)+'</b></div>').join('')
     || '<div><span>No name picks yet.</span></div>';
+
+  await renderTriviaAdmin();
 }
 $('do-reveal').addEventListener('click', async ()=>{
   reveal.revealed=true;
@@ -986,6 +1049,229 @@ $('do-britt-send').addEventListener('click', async ()=>{
     toast('Could not send the update.');
   }
   btn.textContent='Send to everyone'; btn.disabled=false;
+});
+
+/* =======================================================================
+   Trivia Game
+   ======================================================================= */
+const TRIVIA_SHEET_URL = "https://script.google.com/macros/s/AKfycbxtTYr3NWnHCNzv-GgcICtFG5QsHGQBCNufUy6g8pjh79XK0DJ49cpieVZ98Mm_0HEj/exec";
+const K_TRIVIA_STATE    = "trivia:state";     // shared
+const K_TRIVIA_ANSWERED = "trivia:answered:"; // shared, prefix + question + ':' + playerId
+const K_TRIVIA_ME       = "trivia:me";        // private to this browser
+
+const TRIVIA_POEM =
+`We all know and love the mom to be,
+she was a unique one, our Britt's.
+How well do you know her, it's time to see,
+think back to when she was just a bug,
+and soon we'll see what traits she passed down to her mini me.`;
+
+const TRIVIA_QUESTIONS = [
+  { title:"The Secret Snack",
+    text:"I never needed a plate when hunger came my way.\nI had a clever little trick for saving some for later.\nIf you saw me with a suspiciously full face,\nWhat do you think I was doing?",
+    answer:"Storing food in her cheeks like a chipmunk." },
+  { title:"The Motivation",
+    text:"For months, I had no interest in getting down on all fours.\nThen one day, something green caught my eye.\nSuddenly, getting closer became very important.\nWhat finally convinced me to move?",
+    answer:"She crawled for the first time because she wanted to eat a plant." },
+  { title:"Purple Entertainment",
+    text:"One colourful celebrity could keep me occupied for hours.\nHe sang, danced, and apparently never got old.\nLong before streaming services existed in my world,\nWho was my favourite entertainer?",
+    answer:"Barney." },
+  { title:"The Night Owl",
+    text:"Most babies eventually surrender to bedtime.\nI apparently had other plans.\nWhy would I willingly miss out on all the fun\nWhen I could stay awake instead?",
+    answer:"She hated sleeping because she thought it was boring." },
+  { title:"The Party Trick",
+    text:"I discovered that my stomach could do something\nthat most people's stomachs simply cannot.\nNo magic, no special effects, just me showing off.\nWhat unusual trick could I perform?",
+    answer:"She could roll her tummy." },
+  { title:"The Prophecy",
+    text:"Long before anyone handed me a baby doll,\nI was already making a very specific announcement.\nI had the evidence, the confidence, and apparently a due date.\nWhat did I keep insisting was coming?",
+    answer:"She would make herself look pregnant and announce she was having a baby." },
+  { title:"Calling Mom",
+    text:"I didn't need a telephone, a text, or even her name.\nI had one unforgettable way of getting Mom's attention.\nIt sounded less like a little girl and more like a man\ncalling across a truck stop. What did I yell?",
+    answer:"“Yo Ma!”" },
+];
+
+let triviaState = { current: 0 };
+let triviaPlayerName = null;
+let triviaPollTimer = null;
+let triviaLastShown = -1;
+
+function triviaPlayerId(){
+  return (triviaPlayerName||'anon').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+}
+async function loadTriviaState(){
+  try{
+    const r = await window.storage.get(K_TRIVIA_STATE, true);
+    triviaState = (r && r.value) ? JSON.parse(r.value) : { current: 0 };
+  }catch(e){ triviaState = { current: 0 }; }
+}
+async function saveTriviaState(){
+  try{ await window.storage.set(K_TRIVIA_STATE, JSON.stringify(triviaState), true); }
+  catch(e){ toast('Could not save game state.'); }
+}
+function showTriviaPanel(which){
+  show($('trivia-waiting'), which==='waiting');
+  show($('trivia-active'), which==='active');
+  show($('trivia-answered'), which==='answered');
+  show($('trivia-done'), which==='done');
+}
+
+$('play-game-btn').addEventListener('click', async ()=>{
+  show($('screen-guess'),false); show($('screen-board'),false); show($('screen-admin'),false); show($('screen-britt'),false);
+  let m = null;
+  try{ m = await window.storage.get(K_TRIVIA_ME, false); }catch(e){}
+  if(m && m.value){
+    triviaPlayerName = m.value;
+    await enterTriviaGame();
+  } else {
+    show($('screen-trivia-name'),true);
+    $('f-trivia-name').focus();
+  }
+});
+$('trivia-name-back').addEventListener('click', ()=>{ show($('screen-trivia-name'),false); myId?openBoard():show($('screen-guess'),true); });
+
+$('trivia-join').addEventListener('click', async ()=>{
+  const name = $('f-trivia-name').value.trim();
+  const err = $('trivia-name-err');
+  if(!name){ err.textContent='Enter your name first.'; show(err,true); return; }
+  show(err,false);
+  triviaPlayerName = name;
+  try{ await window.storage.set(K_TRIVIA_ME, name, false); }catch(e){}
+  show($('screen-trivia-name'),false);
+  show($('screen-trivia-poem'),true);
+  $('trivia-poem-text').textContent = TRIVIA_POEM;
+});
+$('f-trivia-name').addEventListener('keydown', e=>{ if(e.key==='Enter') $('trivia-join').click(); });
+
+$('trivia-ready').addEventListener('click', async ()=>{
+  show($('screen-trivia-poem'),false);
+  await enterTriviaGame();
+});
+
+async function enterTriviaGame(){
+  show($('screen-trivia-game'),true);
+  await refreshTriviaGame();
+  if(triviaPollTimer) clearInterval(triviaPollTimer);
+  triviaPollTimer = setInterval(refreshTriviaGame, 4000);
+}
+$('trivia-exit').addEventListener('click', ()=>{
+  show($('screen-trivia-game'),false);
+  if(triviaPollTimer){ clearInterval(triviaPollTimer); triviaPollTimer=null; }
+  myId?openBoard():show($('screen-guess'),true);
+});
+
+async function refreshTriviaGame(){
+  await loadTriviaState();
+  const cur = triviaState.current || 0;
+
+  if(cur === 0){
+    $('trivia-q-kicker').textContent = 'Waiting for the host';
+    showTriviaPanel('waiting');
+    triviaLastShown = 0;
+    return;
+  }
+  if(cur > TRIVIA_QUESTIONS.length){
+    $('trivia-q-kicker').textContent = 'Game complete';
+    showTriviaPanel('done');
+    triviaLastShown = cur;
+    return;
+  }
+
+  const q = TRIVIA_QUESTIONS[cur-1];
+  $('trivia-q-kicker').textContent = 'Question '+cur+' of '+TRIVIA_QUESTIONS.length;
+  $('trivia-q-number').textContent = 'Question '+cur;
+  $('trivia-q-title').textContent = q.title;
+  $('trivia-q-text').textContent = q.text;
+
+  let already = false;
+  try{
+    const r = await window.storage.get(K_TRIVIA_ANSWERED+cur+':'+triviaPlayerId(), true);
+    already = !!(r && r.value);
+  }catch(e){}
+
+  if(already){
+    showTriviaPanel('answered');
+  } else {
+    if(cur !== triviaLastShown) $('f-trivia-answer').value='';
+    showTriviaPanel('active');
+  }
+  triviaLastShown = cur;
+}
+
+$('trivia-submit-answer').addEventListener('click', async ()=>{
+  const answer = $('f-trivia-answer').value.trim();
+  if(!answer){ toast('Write an answer first.'); return; }
+  const cur = triviaState.current || 0;
+  if(cur<1 || cur>TRIVIA_QUESTIONS.length) return;
+  const q = TRIVIA_QUESTIONS[cur-1];
+  const btn = $('trivia-submit-answer');
+  btn.textContent='Sending...'; btn.disabled=true;
+
+  // Fire-and-forget to the Google Sheet. Apps Script web apps don't return
+  // CORS headers we could read anyway, so mode:'no-cors' + a text/plain
+  // body (to dodge the preflight the JSON content-type would trigger) is
+  // the standard way to post to one from a browser - we just can't read
+  // the response, only know the request went out.
+  fetch(TRIVIA_SHEET_URL, {
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ name: triviaPlayerName, question: cur, questionTitle: q.title, answer, ts: Date.now() })
+  }).catch(()=>{});
+
+  try{
+    await window.storage.set(K_TRIVIA_ANSWERED+cur+':'+triviaPlayerId(), '1', true);
+  }catch(e){ /* still show as submitted client-side */ }
+
+  showTriviaPanel('answered');
+  btn.textContent='Submit Answer'; btn.disabled=false;
+});
+
+/* ---------- admin controls ---------- */
+async function renderTriviaAdmin(){
+  await loadTriviaState();
+  const cur = triviaState.current || 0;
+  let statusText, btnLabel;
+
+  if(cur === 0){
+    statusText = 'Not started yet.';
+    btnLabel = 'Start the Game';
+  } else if(cur <= TRIVIA_QUESTIONS.length){
+    statusText = 'Question '+cur+' of '+TRIVIA_QUESTIONS.length+' is live.';
+    btnLabel = cur < TRIVIA_QUESTIONS.length ? 'Release Question '+(cur+1) : 'End the Game';
+  } else {
+    statusText = 'Game complete.';
+    btnLabel = null;
+  }
+
+  if(cur>=1 && cur<=TRIVIA_QUESTIONS.length){
+    let answered = 0;
+    try{
+      const res = await window.storage.list(K_TRIVIA_ANSWERED+cur+':', true);
+      answered = (res && res.keys) ? res.keys.length : 0;
+    }catch(e){}
+    statusText += ' '+answered+' answer'+(answered===1?'':'s')+' so far.';
+    $('trivia-admin-answer-key').textContent = 'Answer: '+TRIVIA_QUESTIONS[cur-1].answer;
+    show($('trivia-admin-answer-key'),true);
+  } else {
+    show($('trivia-admin-answer-key'),false);
+  }
+
+  $('trivia-admin-status').textContent = statusText;
+  show($('trivia-admin-advance'), !!btnLabel);
+  if(btnLabel) $('trivia-admin-advance').textContent = btnLabel;
+}
+$('trivia-admin-advance').addEventListener('click', async ()=>{
+  triviaState.current = (triviaState.current||0) + 1;
+  await saveTriviaState();
+  await renderTriviaAdmin();
+  toast(triviaState.current<=TRIVIA_QUESTIONS.length ? 'Question '+triviaState.current+' released.' : 'Game ended.');
+});
+$('trivia-admin-reset').addEventListener('click', async ()=>{
+  if(!confirm('Reset the trivia game back to the start? Players will see "waiting" again.')) return;
+  triviaState = { current: 0 };
+  await saveTriviaState();
+  await renderTriviaAdmin();
+  toast('Game reset.');
 });
 
 (function setDefaultGuessDate(){

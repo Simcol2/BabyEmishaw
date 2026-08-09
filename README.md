@@ -135,6 +135,8 @@ ever appear here**, never in the general host panel, so the person running
 logistics doesn't necessarily see them.
 
 From her page Britt can:
+- Reveal or hide the due date herself (same shared state as the host panel —
+  either page updating it shows up everywhere immediately)
 - See every guess, including each guest's note to her inline
 - Send an on-demand email update to every subscriber — two one-tap presets
   ("false labor, still waiting" / "I think today's the day") that fill in
@@ -144,6 +146,52 @@ The broadcast endpoint checks the passcode server-side too (against a
 `BRITT_PASSCODE` env var, falling back to `6132` if it's not set) so the
 URL can't be hit blindly to spam guests — set that env var in Vercel if you
 change the passcode in the page, so the two stay in sync.
+
+## Play the Game (Britt trivia)
+
+A "Play the Game" button in the footer (visible on every screen) leads to a
+seven-question trivia game about Britt as a baby. It's live-synced across
+everyone playing:
+
+1. A guest taps **Play the Game**, types their name, reads a poem intro,
+   then lands on a "waiting for the host" screen that polls every 4
+   seconds.
+2. From the host panel (`/admin`, same passcode as everything else there),
+   click **Start the Game** to release question 1. Every player's screen
+   picks it up automatically within a few seconds — no refresh needed.
+3. Each guest types an answer and submits. The host panel shows a live
+   count of how many have answered the current question, plus the correct
+   answer for reference, to help decide when to move on.
+4. Click **Release Question 2** (the button's label updates each round) to
+   advance. After question 7 it becomes **End the Game**. **Reset Game**
+   puts everyone back to "waiting" if you want to start over.
+
+Answers are sent straight to the linked Google Sheet as they're submitted,
+via a Google Apps Script Web App:
+
+- `google-apps-script/Code.gs` is the script — paste it into the Apps
+  Script project behind your `/exec` URL (script.google.com), save, then
+  **Deploy → Manage deployments → edit the existing deployment → Version:
+  "New version" → Deploy**. Editing the code alone does not update an
+  already-published `/exec` URL; it needs a new version of that same
+  deployment. Full details are in the comment at the top of the file.
+- Deployment settings need **Execute as "Me"**, **Who has access
+  "Anyone"** — guests post from their own browsers, unauthenticated.
+- The exec URL is hardcoded as `TRIVIA_SHEET_URL` near the top of the
+  trivia section in `index.html` — update it there if you ever redeploy
+  the Apps Script to a new URL (redeploying an *existing* deployment as a
+  new version keeps the same URL; only creating a brand new deployment
+  changes it).
+- The browser can't read the Apps Script response (it doesn't return CORS
+  headers), so submission is fire-and-forget from the page's point of
+  view — it shows "Answer submitted" once the request goes out, not once
+  Google confirms the row was written. If answers aren't showing up in the
+  Sheet, open the `/exec` URL directly in a browser (a GET request) — it
+  should say "Baby Emishaw trivia backend is running." If it doesn't, the
+  deployment isn't live yet (see the "New version" step above).
+- The 7 questions, the poem, and each answer key live in the
+  `TRIVIA_QUESTIONS` / `TRIVIA_POEM` constants in `index.html` — edit
+  there to change the game content.
 
 ## Configuration
 
