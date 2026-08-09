@@ -64,4 +64,38 @@ async function keys(prefix) {
   return [...memoryStore.keys()].filter(k => k.startsWith(prefix));
 }
 
-module.exports = { get, set, del, keys };
+// Reports which backend is actually active on THIS running instance, plus a
+// live write/read/delete round trip against it. Used by the /api/storage
+// ?op=diag endpoint so a real deployment can be checked from the browser
+// without touching any guest-facing data (diag:selftest: keys never appear
+// on the board, which only lists the shower:entry: prefix).
+async function diagnose() {
+  const varSource = process.env.KV_REST_API_URL
+    ? 'KV_REST_API_URL/KV_REST_API_TOKEN'
+    : process.env.UPSTASH_REDIS_REST_URL
+      ? 'UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN'
+      : null;
+  const kv = getKv();
+  const result = {
+    backend: kv ? 'redis' : 'memory',
+    envVarsFound: varSource,
+    unavailableReason: kv ? null : kvUnavailableReason,
+  };
+  if (kv) {
+    const testKey = 'diag:selftest:' + Date.now() + ':' + Math.random().toString(36).slice(2, 8);
+    const testVal = 'ok-' + Math.random().toString(36).slice(2, 8);
+    try {
+      await set(testKey, testVal);
+      const readBack = await get(testKey);
+      await del(testKey);
+      result.selfTest = readBack === testVal ? 'passed' : 'failed_mismatch';
+      if (result.selfTest !== 'passed') result.selfTestDetail = { wrote: testVal, read: readBack };
+    } catch (e) {
+      result.selfTest = 'errored';
+      result.selfTestError = String((e && e.message) || e);
+    }
+  }
+  return result;
+}
+
+module.exports = { get, set, del, keys, diagnose };

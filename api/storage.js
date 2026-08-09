@@ -6,6 +6,13 @@ module.exports = async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const { op, key, prefix } = req.query || {};
+      if (op === 'diag') {
+        const diag = await kv.diagnose();
+        diag.vercelEnv = process.env.VERCEL_ENV || null;
+        diag.deploymentUrl = process.env.VERCEL_URL || null;
+        diag.commit = (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 7) || null;
+        return res.status(200).json(diag);
+      }
       if (op === 'list') {
         if (!prefix) return res.status(400).json({ error: 'prefix required' });
         const listKeys = await kv.keys(prefix);
