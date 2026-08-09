@@ -365,6 +365,17 @@ footer .dot{display:inline-block;width:24px;height:24px;line-height:24px;color:v
 
     <div class="hidden" id="britt-panel">
       <div class="card">
+        <h2>Due Date</h2>
+        <p class="sub">Reveal it whenever you're ready — guests see a live countdown the moment you do. Hide it again if you change your mind.</p>
+        <label for="f-britt-realdate">The real due date</label>
+        <input type="date" id="f-britt-realdate" value="2026-10-24">
+        <label for="f-britt-realtime">Countdown starts from</label>
+        <input type="time" id="f-britt-realtime" value="00:00">
+        <button class="btn gold" id="britt-do-reveal">Reveal the due date</button>
+        <button class="btn ghost hidden" id="britt-do-hide">Hide it again</button>
+      </div>
+
+      <div class="card">
         <h2>Every Guess</h2>
         <p class="sub">Notes are only shown here, on your page — nobody else sees them.</p>
         <div id="britt-guess-list"></div>
@@ -910,6 +921,12 @@ $('f-britt-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('do-brit
 
 async function renderBritt(){
   await loadReveal(); await loadEntries();
+
+  $('f-britt-realdate').value = reveal.dueDate || DEFAULT_DUE;
+  $('f-britt-realtime').value = reveal.dueTime || '00:00';
+  show($('britt-do-reveal'), !reveal.revealed);
+  show($('britt-do-hide'), reveal.revealed);
+
   const wid = winnerId();
   $('britt-guess-list').innerHTML = entries.map(e=>`
     <div class="guess">
@@ -929,6 +946,16 @@ async function renderBritt(){
   const subCount = new Set(entries.filter(e=>e.email).map(e=>e.email)).size;
   $('britt-sub-count').textContent = subCount;
 }
+
+$('britt-do-reveal').addEventListener('click', async ()=>{
+  reveal.revealed=true;
+  reveal.dueDate=$('f-britt-realdate').value||DEFAULT_DUE;
+  reveal.dueTime=$('f-britt-realtime').value||'00:00';
+  await saveReveal(); await renderBritt(); toast('Date revealed. Countdown is live.');
+});
+$('britt-do-hide').addEventListener('click', async ()=>{
+  reveal.revealed=false; await saveReveal(); await renderBritt(); toast('Hidden again.');
+});
 
 $('preset-false-labor').addEventListener('click', ()=>{
   $('f-britt-message').value = "False alarm, everyone — still waiting! I'll update you the moment there's real news.";
